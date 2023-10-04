@@ -17,7 +17,7 @@ if __name__ == "__main__":
             if event.type == pg.QUIT:
                 running = False
             elif event.type == pg.MOUSEBUTTONDOWN:
-                line = PolyLine(25)
+                line = PolyLine(10)
                 line.push_vertex(*pos)
             elif (event.type == pg.MOUSEBUTTONUP) and line:
                 line.push_vertex(*pos)
@@ -29,7 +29,7 @@ if __name__ == "__main__":
         screen.fill((255, 255, 255))
 
         for polyline in PolyLine.instances:
-            polyline.draw(screen)
+            polyline.draw(screen, True)
 
         pg.display.flip()
 
