@@ -23,23 +23,38 @@ class Node:
 
 @dataclass
 class RectCheck:
+
     empty: bool = field(init=False, default=True, repr=False)
+
     x1: int = field(init=False, default=0)
     y1: int = field(init=False, default=0)
     x2: int = field(init=False, default=0)
     y2: int = field(init=False, default=0)
+
+    start_x: int = field(init=False, default=0)
+    start_y: int = field(init=False, default=0)
+
+    end_x: int = field(init=False, default=0)
+    end_y: int = field(init=False, default=0)
+
+    counter: int = field(init=False, default=0)
 
     def draw(self, screen):
         rect = [self.x1, self.y1, self.x2 - self.x1, self.y2 - self.y1]
         pg.draw.rect(screen, (0, 0, 0), rect, 1)
 
     def push_vertex(self, x, y):
+        self.counter += 1
         if self.empty:
             self.empty = False
             self.x1 = x
             self.y1 = y
             self.x2 = x
             self.y2 = y
+            self.start_x = x
+            self.start_y = y
+            self.end_x = x
+            self.end_y = y
             return
 
         if self.x1 > x:
@@ -54,6 +69,9 @@ class RectCheck:
         if self.y2 < y:
             self.y2 = y
 
+        self.end_x = x
+        self.end_y = y
+
     def check_cross(self, x, y):
         check_x = (x >= self.x1) and (x <= self.x2)
         check_y = (y >= self.y1) and (y <= self.y2)
@@ -66,16 +84,12 @@ class RectSpace:
     start_y: int = field(init=False, default=0)
     vertex_counter: int = field(init=False, default=0)
     power_counter: int = field(init=False, default=1)
-    preparing_rect: RectCheck = field(init=False)
     rectangles: Dict[int, List[RectCheck]] = field(init=False)
 
     def __post_init__(self):
         self.rectangles = {1: [RectCheck()]}
-        self.preparing_rect = RectCheck()
 
     def push_vertex(self, x, y):
-
-        self.preparing_rect.push_vertex(x, y)
 
         for key in self.rectangles:
             self.rectangles[key][-1].push_vertex(x, y)
@@ -96,7 +110,7 @@ class RectSpace:
             )
 
         for key in self.rectangles:
-            if not (self.vertex_counter % key):
+            if self.vertex_counter and not (self.vertex_counter % key):
                 self.rectangles[key].append(RectCheck())
                 self.rectangles[key][-1].push_vertex(x, y)
 
@@ -128,6 +142,8 @@ class PolyLine:
         self.vertexes.append((x, y))
 
     def is_edge_end(self, x, y) -> bool:
+        if not self.vertexes:
+            return True
         last_x, last_y = self.vertexes[-1]
         distance = np.sqrt(
             np.power(x - last_x, 2) +
@@ -139,6 +155,9 @@ class PolyLine:
     @staticmethod
     def pop():
         return PolyLine.instances.pop()
+
+    def cross_detect(self):
+        pass
 
     def draw(self, screen, debug: bool = False):
         if len(self.vertexes) < 2:
