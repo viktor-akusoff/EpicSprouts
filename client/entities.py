@@ -136,6 +136,10 @@ class PolyLine:
 
         return distance >= self.split_distance
 
+    @staticmethod
+    def pop():
+        return PolyLine.instances.pop()
+
     def draw(self, screen, debug: bool = False):
         if len(self.vertexes) < 2:
             return

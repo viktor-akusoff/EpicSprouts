@@ -22,6 +22,7 @@ if __name__ == "__main__":
             elif (event.type == pg.MOUSEBUTTONUP) and line:
                 line.push_vertex(*pos)
                 line = None
+                PolyLine.pop()
 
         if line and line.is_edge_end(*pos):
             line.push_vertex(*pos)
