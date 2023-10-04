@@ -54,44 +54,46 @@ class RectCheck:
         if self.y2 < y:
             self.y2 = y
 
+    def check_cross(self, x, y):
+        check_x = (x >= self.x1) and (x <= self.x2)
+        check_y = (y >= self.y1) and (y <= self.y2)
+        return check_x and check_y
+
 
 @dataclass
 class RectSpace:
-    empty: bool = field(init=False, default=True)
     start_x: int = field(init=False, default=0)
     start_y: int = field(init=False, default=0)
     vertex_counter: int = field(init=False, default=0)
-    power_counter: int = field(init=False, default=2)
+    power_counter: int = field(init=False, default=1)
     preparing_rect: RectCheck = field(init=False)
     rectangles: Dict[int, List[RectCheck]] = field(init=False)
 
     def __post_init__(self):
-        self.rectangles = {2: [RectCheck()]}
+        self.rectangles = {1: [RectCheck()]}
         self.preparing_rect = RectCheck()
 
     def push_vertex(self, x, y):
 
         self.preparing_rect.push_vertex(x, y)
 
-        if self.empty:
-            self.start_x = x
-            self.start_y = y
-            self.empty = False
-
         for key in self.rectangles:
             self.rectangles[key][-1].push_vertex(x, y)
 
         if self.vertex_counter == self.power_counter:
+            rect = self.rectangles[self.power_counter][-1]
             self.power_counter *= 2
             self.rectangles[self.power_counter] = [
-                self.preparing_rect,
                 RectCheck()
             ]
-            self.rectangles[self.power_counter][1].push_vertex(
-                 self.start_x,
-                 self.start_y
+            self.rectangles[self.power_counter][0].push_vertex(
+                 rect.x1,
+                 rect.y1
             )
-            self.rectangles[self.power_counter][1].push_vertex(x, y)
+            self.rectangles[self.power_counter][0].push_vertex(
+                rect.x2,
+                rect.y2
+            )
 
         for key in self.rectangles:
             if not (self.vertex_counter % key):
