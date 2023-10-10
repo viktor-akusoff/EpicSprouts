@@ -56,9 +56,6 @@ class RectCheck:
         if self.y2 < y:
             self.y2 = y
 
-        self.end_x = x
-        self.end_y = y
-
     def check_cross(self, x, y):
         check_x = (x >= self.x1) and (x <= self.x2)
         check_y = (y >= self.y1) and (y <= self.y2)
