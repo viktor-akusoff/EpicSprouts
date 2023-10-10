@@ -14,14 +14,14 @@ CODE_TOP = 8
 def cohen_sutherland_code(xmin, ymin, xmax, ymax, x, y):
     result_code = CODE_INSIDE
 
-    if x < xmin:
+    if x <= xmin:
         result_code |= CODE_LEFT
-    elif x > xmax:
+    elif x >= xmax:
         result_code |= CODE_RIGHT
 
-    if y < ymin:
+    if y <= ymin:
         result_code |= CODE_BOTTOM
-    elif y > ymax:
+    elif y >= ymax:
         result_code |= CODE_TOP
 
     return result_code
@@ -133,7 +133,6 @@ class PolyLine:
     def cross_detect(self, new_x, new_y):
         last_x, last_y = self.vertexes[-1]
         for polyline in PolyLine.instances[:-1]:
-            print(polyline.rect_check)
             if polyline.rect_check.check_cross(last_x, last_y, new_x, new_y):
                 return True
         return False
