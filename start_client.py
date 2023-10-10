@@ -17,14 +17,18 @@ if __name__ == "__main__":
             if event.type == pg.QUIT:
                 running = False
             elif event.type == pg.MOUSEBUTTONDOWN:
-                line = PolyLine(10)
+                line = PolyLine(50)
                 line.push_vertex(*pos)
             elif (event.type == pg.MOUSEBUTTONUP) and line:
                 line.push_vertex(*pos)
                 line = None
 
         if line and line.is_edge_end(*pos):
-            line.push_vertex(*pos)
+            if line.cross_detect(*pos):
+                line = None
+                PolyLine.pop()
+            else:
+                line.push_vertex(*pos)
 
         screen.fill((255, 255, 255))
 

@@ -4,6 +4,28 @@ import pygame as pg
 from dataclasses import dataclass, field
 from typing import Tuple, List
 
+CODE_INSIDE = 0
+CODE_LEFT = 1
+CODE_RIGHT = 2
+CODE_BOTTOM = 4
+CODE_TOP = 8
+
+
+def cohen_sutherland_code(xmin, ymin, xmax, ymax, x, y):
+    result_code = CODE_INSIDE
+
+    if x < xmin:
+        result_code |= CODE_LEFT
+    elif x > xmax:
+        result_code |= CODE_RIGHT
+
+    if y < ymin:
+        result_code |= CODE_BOTTOM
+    elif y > ymax:
+        result_code |= CODE_TOP
+
+    return result_code
+
 
 @dataclass
 class Node:
@@ -56,10 +78,22 @@ class RectCheck:
         if self.y2 < y:
             self.y2 = y
 
-    def check_cross(self, x, y):
-        check_x = (x >= self.x1) and (x <= self.x2)
-        check_y = (y >= self.y1) and (y <= self.y2)
-        return check_x and check_y
+    def check_cross(self, x1, y1, x2, y2):
+        code_point1 = cohen_sutherland_code(
+            self.x1, self.y1,
+            self.x2, self.y2,
+            x1, y1
+        )
+
+        code_point2 = cohen_sutherland_code(
+            self.x1, self.y1,
+            self.x2, self.y2,
+            x2, y2
+        )
+
+        final_code = code_point1 & code_point2
+
+        return not final_code
 
 
 @dataclass
@@ -96,8 +130,13 @@ class PolyLine:
     def pop():
         return PolyLine.instances.pop()
 
-    def cross_detect(self):
-        pass
+    def cross_detect(self, new_x, new_y):
+        last_x, last_y = self.vertexes[-1]
+        for polyline in PolyLine.instances[:-1]:
+            print(polyline.rect_check)
+            if polyline.rect_check.check_cross(last_x, last_y, new_x, new_y):
+                return True
+        return False
 
     def draw(self, screen, debug: bool = False):
         if len(self.vertexes) < 2:
