@@ -7,7 +7,7 @@ from typing import Tuple, List, Dict
 
 @dataclass
 class Node:
-    instances: List[object] = []
+    instances = []
     id_itter = itertools.count()
     id: int = field(init=False)
     x: float = field(default=0)
@@ -124,7 +124,7 @@ class RectSpace:
 
 @dataclass
 class PolyLine:
-    instances: List[object] = []
+    instances = []
     id_itter = itertools.count()
     vertexes: List[Tuple[int, int]] = field(init=False)
     rect_space: RectSpace = field(init=False)
