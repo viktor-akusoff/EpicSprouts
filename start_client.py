@@ -21,15 +21,20 @@ if __name__ == "__main__":
                 line.push_vertex(*pos)
             elif (event.type == pg.MOUSEBUTTONUP) and line:
                 line.push_vertex(*pos)
+                line.rect_space.finish()
                 line = None
 
         if line and line.is_edge_end(*pos):
-            line.push_vertex(*pos)
+            if line.cross_detect(*pos):
+                line = None
+                PolyLine.pop()
+            else:
+                line.push_vertex(*pos)
 
         screen.fill((255, 255, 255))
 
         for polyline in PolyLine.instances:
-            polyline.draw(screen, True)
+            polyline.draw(screen, False)
 
         pg.display.flip()
 
