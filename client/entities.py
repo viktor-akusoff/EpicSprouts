@@ -291,6 +291,11 @@ class PolyLine:
         for polyline in PolyLine.instances[:-1]:
             if polyline.rect_space.check_cross(last_x, last_y, new_x, new_y):
                 return True
+        rect_tree_nodes = self.rect_space.tree[1][:-1]
+        for rect_tree_node in rect_tree_nodes:
+            rect = rect_tree_node.rectangle
+            if rect.check_cross(last_x, last_y, new_x, new_y):
+                return True
         return False
 
     def draw(self, screen, debug: bool = False):
