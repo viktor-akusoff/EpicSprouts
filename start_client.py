@@ -33,9 +33,9 @@ if __name__ == "__main__":
 
         screen.fill((255, 255, 255))
 
-        for polyline in PolyLine.instances:
-            polyline.draw(screen, False)
+        PolyLine.draw_all(screen)
         Node.draw_all(screen)
+
         pg.display.flip()
 
     pg.quit()

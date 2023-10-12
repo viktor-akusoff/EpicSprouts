@@ -349,3 +349,8 @@ class PolyLine:
                 self.rect_space.draw(screen)
             counter += 1
             previous_vertex = vertex
+
+    @staticmethod
+    def draw_all(screen):
+        for polyline in PolyLine.instances:
+            polyline.draw(screen)
