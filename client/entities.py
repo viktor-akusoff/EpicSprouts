@@ -244,14 +244,12 @@ class PolyLine:
     instances = []
     id_itter = itertools.count()
     vertexes: List[Tuple[int, int]] = field(init=False)
-    rect_check: RectCheck = field(init=False)
     rect_space: RectSpace = field(init=False)
     split_distance: float = field(default=5)
     id: int = field(init=False)
 
     def __post_init__(self):
         self.vertexes = []
-        self.rect_check = RectCheck()
         self.rect_space = RectSpace()
         self.id = next(PolyLine.id_itter)
         PolyLine.instances.append(self)
@@ -264,7 +262,6 @@ class PolyLine:
         line.finish()
 
     def push_vertex(self, x: int, y: int):
-        self.rect_check.push_vertex(x, y)
         self.rect_space.push_vertex(x, y)
         self.vertexes.append((x, y))
 
