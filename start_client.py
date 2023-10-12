@@ -1,5 +1,5 @@
 import pygame as pg
-from client.entities import PolyLine
+from client.entities import PolyLine, Node
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
@@ -8,7 +8,7 @@ if __name__ == "__main__":
     pg.init()
     pg.display.set_caption('Epic Sprouts')
     screen = pg.display.set_mode([SCREEN_WIDTH, SCREEN_HEIGHT])
-
+    Node.generate_field(screen, 15)
     running = True
     line = None
     while running:
@@ -17,7 +17,7 @@ if __name__ == "__main__":
             if event.type == pg.QUIT:
                 running = False
             elif event.type == pg.MOUSEBUTTONDOWN:
-                line = PolyLine(10)
+                line = PolyLine(5)
                 line.push_vertex(*pos)
             elif (event.type == pg.MOUSEBUTTONUP) and line:
                 line.push_vertex(*pos)
@@ -35,7 +35,7 @@ if __name__ == "__main__":
 
         for polyline in PolyLine.instances:
             polyline.draw(screen, False)
-
+        Node.draw_all(screen)
         pg.display.flip()
 
     pg.quit()

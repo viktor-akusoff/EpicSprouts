@@ -30,6 +30,11 @@ def cohen_sutherland_code(xmin, ymin, xmax, ymax, x, y):
     return result_code
 
 
+def dots_distance(x1, y1, x2, y2):
+    result = np.sqrt(np.power(x2 - x1, 2) + np.power(y2 - y1, 2))
+    return result
+
+
 @dataclass
 class Node:
     instances = []
@@ -44,6 +49,30 @@ class Node:
 
     def draw(self, screen):
         pg.draw.circle(screen, (0, 0, 0), (self.x, self.y), 5)
+
+    @staticmethod
+    def generate_field(screen, number_of_dots: int = 10, radius: int = 50):
+        w, h = screen.get_size()
+        dots: List[Tuple[int, int]] = []
+        for _ in range(number_of_dots):
+            while True:
+                too_close = False
+                x = np.random.randint(radius, w - radius)
+                y = np.random.randint(radius, h - radius)
+                for dot in dots:
+                    if dots_distance(*dot, x, y) < radius:
+                        too_close = True
+                        break
+                if too_close:
+                    continue
+                dots.append((x, y))
+                break
+            Node(x, y)
+
+    @staticmethod
+    def draw_all(screen):
+        for node in Node.instances:
+            node.draw(screen)
 
 
 @dataclass
