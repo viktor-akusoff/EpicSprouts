@@ -30,6 +30,11 @@ def cohen_sutherland_code(xmin, ymin, xmax, ymax, x, y):
     return result_code
 
 
+def dots_distance(x1, y1, x2, y2):
+    result = np.sqrt(np.power(x2 - x1, 2) + np.power(y2 - y1, 2))
+    return result
+
+
 @dataclass
 class Node:
     instances = []
@@ -44,6 +49,30 @@ class Node:
 
     def draw(self, screen):
         pg.draw.circle(screen, (0, 0, 0), (self.x, self.y), 5)
+
+    @staticmethod
+    def generate_field(screen, number_of_dots: int = 10, radius: int = 50):
+        w, h = screen.get_size()
+        dots: List[Tuple[int, int]] = []
+        for _ in range(number_of_dots):
+            while True:
+                too_close = False
+                x = np.random.randint(radius, w - radius)
+                y = np.random.randint(radius, h - radius)
+                for dot in dots:
+                    if dots_distance(*dot, x, y) < radius:
+                        too_close = True
+                        break
+                if too_close:
+                    continue
+                dots.append((x, y))
+                break
+            Node(x, y)
+
+    @staticmethod
+    def draw_all(screen):
+        for node in Node.instances:
+            node.draw(screen)
 
 
 @dataclass
@@ -244,14 +273,12 @@ class PolyLine:
     instances = []
     id_itter = itertools.count()
     vertexes: List[Tuple[int, int]] = field(init=False)
-    rect_check: RectCheck = field(init=False)
     rect_space: RectSpace = field(init=False)
     split_distance: float = field(default=5)
     id: int = field(init=False)
 
     def __post_init__(self):
         self.vertexes = []
-        self.rect_check = RectCheck()
         self.rect_space = RectSpace()
         self.id = next(PolyLine.id_itter)
         PolyLine.instances.append(self)
@@ -264,7 +291,6 @@ class PolyLine:
         line.finish()
 
     def push_vertex(self, x: int, y: int):
-        self.rect_check.push_vertex(x, y)
         self.rect_space.push_vertex(x, y)
         self.vertexes.append((x, y))
 
@@ -290,6 +316,11 @@ class PolyLine:
         last_x, last_y = self.vertexes[-1]
         for polyline in PolyLine.instances[:-1]:
             if polyline.rect_space.check_cross(last_x, last_y, new_x, new_y):
+                return True
+        rect_tree_nodes = self.rect_space.tree[1][:-1]
+        for rect_tree_node in rect_tree_nodes:
+            rect = rect_tree_node.rectangle
+            if rect.check_cross(last_x, last_y, new_x, new_y):
                 return True
         return False
 
