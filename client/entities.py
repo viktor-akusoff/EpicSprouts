@@ -47,8 +47,8 @@ class Node:
         self.id = next(Node.id_itter)
         Node.instances.append(self)
 
-    def draw(self, screen):
-        pg.draw.circle(screen, (0, 0, 0), (self.x, self.y), 5)
+    def draw(self, screen, color=(0, 0, 0)):
+        pg.draw.circle(screen, color, (self.x, self.y), 5)
 
     @staticmethod
     def generate_field(screen, number_of_dots: int = 10, radius: int = 50):
@@ -69,10 +69,24 @@ class Node:
                 break
             Node(x, y)
 
+    def belongs_to_node(self, x, y):
+        if dots_distance(self.x, self.y, x, y) < 5:
+            return True
+
     @staticmethod
-    def draw_all(screen):
+    def belongs_to_nodes(x, y):
+        for dot in Node.instances:
+            if dot.belongs_to_node(x, y):
+                return dot.id
+        return -1
+
+    @staticmethod
+    def draw_all(screen, x, y):
         for node in Node.instances:
-            node.draw(screen)
+            if node.belongs_to_node(x, y):
+                node.draw(screen, (255, 0, 0))
+            else:
+                node.draw(screen, (0, 0, 0))
 
 
 @dataclass

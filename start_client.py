@@ -17,15 +17,19 @@ if __name__ == "__main__":
             if event.type == pg.QUIT:
                 running = False
             elif event.type == pg.MOUSEBUTTONDOWN:
-                line = PolyLine(5)
-                line.push_vertex(*pos)
+                if Node.belongs_to_nodes(*pos) > -1:
+                    line = PolyLine(5)
+                    line.push_vertex(*pos)
             elif (event.type == pg.MOUSEBUTTONUP) and line:
-                line.push_vertex(*pos)
-                line.rect_space.finish()
+                if (Node.belongs_to_nodes(*pos) < 0):
+                    PolyLine.pop()
+                else:
+                    line.push_vertex(*pos)
+                    line.rect_space.finish()
                 line = None
 
         if line and line.is_edge_end(*pos):
-            if line.cross_detect(*pos):
+            if (Node.belongs_to_nodes(*pos) < 0) and line.cross_detect(*pos):
                 line = None
                 PolyLine.pop()
             else:
@@ -34,7 +38,7 @@ if __name__ == "__main__":
         screen.fill((255, 255, 255))
 
         PolyLine.draw_all(screen)
-        Node.draw_all(screen)
+        Node.draw_all(screen, *pos)
 
         pg.display.flip()
 
