@@ -15,14 +15,14 @@ if __name__ == "__main__":
     out_node = None
     while running:
         pos = pg.mouse.get_pos()
-        over_node = Node.belongs_to_nodes(*pos)
+        over_node = Node.over_nodes(*pos)
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 running = False
             elif (
                 (event.type == pg.MOUSEBUTTONDOWN) and
                 (over_node > -1) and
-                (not Node.is_grey(over_node))
+                Node.is_free(over_node)
             ):
                 line = PolyLine(5)
                 line.push_vertex(*pos)
@@ -31,35 +31,34 @@ if __name__ == "__main__":
             elif (event.type == pg.MOUSEBUTTONUP) and line:
                 line = None
                 if out_node is not None:
-                    Node.del_line(out_node)
+                    Node.lower_degree(out_node)
                 out_node = None
                 PolyLine.pop()
 
         if line:
             if (over_node > -1) and not crossing_dot_a:
-                if not Node.is_grey(over_node):
+                if Node.is_free(over_node):
                     line.push_vertex(*pos)
-                    Node.add_line(over_node)
-                    line.rect_space.finish()
+                    Node.rise_degree(over_node)
+                    line.finish()
                     new_node = Node(*line.middle_point)
-                    Node.add_line(new_node.id)
-                    Node.add_line(new_node.id)
+                    Node.rise_degree(new_node.id, 2)
                     line = None
                 else:
                     line = None
                     if out_node is not None:
-                        Node.del_line(out_node)
+                        Node.lower_degree(out_node)
                     PolyLine.pop()
             elif (over_node < 0) and crossing_dot_a:
                 if out_node is not None:
-                    Node.add_line(out_node)
+                    Node.rise_degree(out_node)
                 crossing_dot_a = False
 
         if line and line.is_edge_end(*pos):
             if (over_node < 0) and line.cross_detect(*pos):
                 line = None
                 if out_node is not None:
-                    Node.del_line(out_node)
+                    Node.lower_degree(out_node)
                 PolyLine.pop()
             else:
                 line.push_vertex(*pos)
@@ -67,7 +66,7 @@ if __name__ == "__main__":
         screen.fill((255, 255, 255))
 
         PolyLine.draw_all(screen)
-        Node.draw_all(screen, *pos, over_node)
+        Node.draw_all(screen, over_node)
 
         pg.display.flip()
 
