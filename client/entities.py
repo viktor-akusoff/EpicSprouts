@@ -83,7 +83,7 @@ class Node:
         node: Node = Node.instances[id]
         if node.number_of_lines < 3:
             node.number_of_lines += 1
-            
+
     @staticmethod
     def del_line(id: int):
         if id < 0:
