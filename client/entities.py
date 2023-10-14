@@ -7,6 +7,8 @@ from typing import Tuple, List, OrderedDict
 from collections import OrderedDict as od
 from queue import Queue
 
+DOTS_RADIUS = 8
+
 CODE_INSIDE = 0
 CODE_LEFT = 1
 CODE_RIGHT = 2
@@ -48,7 +50,7 @@ class Node:
         Node.instances.append(self)
 
     def draw(self, screen, color=(0, 0, 0)):
-        pg.draw.circle(screen, color, (self.x, self.y), 5)
+        pg.draw.circle(screen, color, (self.x, self.y), DOTS_RADIUS)
 
     @staticmethod
     def generate_field(screen, number_of_dots: int = 10, radius: int = 50):
@@ -70,7 +72,7 @@ class Node:
             Node(x, y)
 
     def belongs_to_node(self, x, y):
-        if dots_distance(self.x, self.y, x, y) < 5:
+        if dots_distance(self.x, self.y, x, y) < DOTS_RADIUS:
             return True
 
     @staticmethod
@@ -81,9 +83,9 @@ class Node:
         return -1
 
     @staticmethod
-    def draw_all(screen, x, y):
+    def draw_all(screen, x, y, over_id):
         for node in Node.instances:
-            if node.belongs_to_node(x, y):
+            if node.id == over_id:
                 node.draw(screen, (255, 0, 0))
             else:
                 node.draw(screen, (0, 0, 0))
