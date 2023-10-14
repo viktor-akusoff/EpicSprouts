@@ -44,6 +44,7 @@ class Node:
     id: int = field(init=False)
     x: float = field(default=0)
     y: float = field(default=0)
+    number_of_lines: int = field(init=False, default=0)
 
     def __post_init__(self):
         self.id = next(Node.id_itter)
@@ -76,6 +77,29 @@ class Node:
             return True
 
     @staticmethod
+    def add_line(id: int):
+        if id < 0:
+            return
+        node: Node = Node.instances[id]
+        if node.number_of_lines < 3:
+            node.number_of_lines += 1
+            
+    @staticmethod
+    def del_line(id: int):
+        if id < 0:
+            return
+        node: Node = Node.instances[id]
+        if node.number_of_lines > 0:
+            node.number_of_lines -= 1
+
+    @staticmethod
+    def is_grey(id: int) -> bool:
+        if id < 0:
+            return False
+        node: Node = Node.instances[id]
+        return node.number_of_lines == 3
+
+    @staticmethod
     def belongs_to_nodes(x, y):
         for dot in Node.instances:
             if dot.belongs_to_node(x, y):
@@ -85,10 +109,12 @@ class Node:
     @staticmethod
     def draw_all(screen, x, y, over_id):
         for node in Node.instances:
-            if node.id == over_id:
-                node.draw(screen, (255, 0, 0))
-            else:
-                node.draw(screen, (0, 0, 0))
+            node_color = (0, 0, 0)
+            if node.number_of_lines == 3:
+                node_color = (100, 100, 100)
+            elif node.id == over_id:
+                node_color = (255, 0, 0)
+            node.draw(screen, node_color)
 
 
 @dataclass
