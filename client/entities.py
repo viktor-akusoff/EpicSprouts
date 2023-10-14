@@ -325,6 +325,11 @@ class PolyLine:
         self.id = next(PolyLine.id_itter)
         PolyLine.instances.append(self)
 
+    @property
+    def middle_point(self) -> Tuple[int, int]:
+        middle = len(self.vertexes) // 2
+        return self.vertexes[middle]
+
     @staticmethod
     def add_line(*args):
         line = PolyLine(10)

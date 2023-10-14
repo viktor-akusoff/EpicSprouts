@@ -41,6 +41,9 @@ if __name__ == "__main__":
                     line.push_vertex(*pos)
                     Node.add_line(over_node)
                     line.rect_space.finish()
+                    new_node = Node(*line.middle_point)
+                    Node.add_line(new_node.id)
+                    Node.add_line(new_node.id)
                     line = None
                 else:
                     line = None
