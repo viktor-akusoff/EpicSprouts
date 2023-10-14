@@ -20,6 +20,10 @@ CODE_BOTTOM = 4
 CODE_TOP = 8
 
 
+pg.font.init()
+node_font = pg.font.SysFont('arial', 10)
+
+
 def cohen_sutherland_code(
     xmin: int, ymin: int,
     xmax: int, ymax: int,
@@ -59,7 +63,10 @@ class Node:
         Node.instances.append(self)
 
     def draw(self, screen, color: Color = (0, 0, 0)) -> None:
+        text_surface = node_font.render(str(self.id), False, (255, 255, 255))
+        place = text_surface.get_rect(center=(self.x, self.y))
         pg.draw.circle(screen, color, (self.x, self.y), DOTS_RADIUS)
+        screen.blit(text_surface, place)
 
     @staticmethod
     def generate_field(
