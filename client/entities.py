@@ -8,8 +8,8 @@ from collections import OrderedDict as od
 from queue import Queue
 
 Color = Tuple[int, int, int]
-Rect = Tuple[int, int, int, int]
-Vertex = Tuple[int, int]
+Rect = Tuple[float, float, float, float]
+Vertex = Tuple[float, float]
 
 DOTS_RADIUS = 8
 
@@ -25,9 +25,9 @@ node_font = pg.font.SysFont('arial', 10)
 
 
 def cohen_sutherland_code(
-    xmin: int, ymin: int,
-    xmax: int, ymax: int,
-    x: int, y: int
+    xmin: float, ymin: float,
+    xmax: float, ymax: float,
+    x: float, y: float
 ) -> int:
     result_code: int = CODE_INSIDE
 
@@ -44,7 +44,7 @@ def cohen_sutherland_code(
     return result_code
 
 
-def dots_distance(x1: int, y1: int, x2: int, y2: int) -> float:
+def dots_distance(x1: float, y1: float, x2: float, y2: float) -> float:
     result: int = np.sqrt(np.power(x2 - x1, 2) + np.power(y2 - y1, 2))
     return result
 
@@ -54,8 +54,8 @@ class Node:
     instances = []
     id_itter = itertools.count()
     id: int = field(init=False)
-    x: int = field(default=0)
-    y: int = field(default=0)
+    x: float = field(default=0)
+    y: float = field(default=0)
     degree: int = field(init=False, default=0)
 
     def __post_init__(self):
@@ -81,8 +81,8 @@ class Node:
         for _ in range(number_of_dots):
             while True:
                 too_close: bool = False
-                x: int = np.random.randint(radius, w - radius)
-                y: int = np.random.randint(radius, h - radius)
+                x: float = np.random.randint(radius, w - radius)
+                y: float = np.random.randint(radius, h - radius)
                 for dot in dots:
                     if dots_distance(*dot, x, y) < radius:
                         too_close = True
@@ -93,7 +93,7 @@ class Node:
                 break
             Node(x, y)
 
-    def over_node(self, x: int, y: int) -> bool:
+    def over_node(self, x: float, y: float) -> bool:
         if dots_distance(self.x, self.y, x, y) < DOTS_RADIUS:
             return True
         return False
@@ -122,7 +122,7 @@ class Node:
         return node.degree < 3
 
     @staticmethod
-    def over_nodes(x: int, y: int) -> int:
+    def over_nodes(x: float, y: float) -> int:
         for dot in Node.instances:
             if dot.over_node(x, y):
                 return dot.id
@@ -144,10 +144,10 @@ class RectCheck:
 
     empty: bool = field(init=False, default=True, repr=False)
 
-    x1: int = field(init=False, default=0)
-    y1: int = field(init=False, default=0)
-    x2: int = field(init=False, default=0)
-    y2: int = field(init=False, default=0)
+    x1: float = field(init=False, default=0)
+    y1: float = field(init=False, default=0)
+    x2: float = field(init=False, default=0)
+    y2: float = field(init=False, default=0)
 
     @property
     def correct(self) -> bool:
@@ -163,7 +163,7 @@ class RectCheck:
         rect: Rect = (self.x1, self.y1, self.x2 - self.x1, self.y2 - self.y1)
         pg.draw.rect(screen, (0, 0, 0), rect, 1)
 
-    def push_vertex(self, x: int, y: int) -> None:
+    def push_vertex(self, x: float, y: float) -> None:
         if self.empty:
             self.empty = False
             self.x1 = x
@@ -184,7 +184,7 @@ class RectCheck:
         if self.y2 < y:
             self.y2 = y
 
-    def check_cross(self, x1: int, y1: int, x2: int, y2: int) -> bool:
+    def check_cross(self, x1: float, y1: float, x2: float, y2: float) -> bool:
         code_point1: int = cohen_sutherland_code(
             self.x1, self.y1,
             self.x2, self.y2,
@@ -210,6 +210,12 @@ class RectTreeNode:
 
     def __post_init__(self):
         self.rectangle = RectCheck()
+        self.update()
+
+    def update(self, total: bool = False):
+
+        if total:
+            self.rectangle = RectCheck()
 
         if not self.left or not self.right:
             return
@@ -239,21 +245,43 @@ class RectTreeNode:
         self.rectangle.push_vertex(*first_point)
         self.rectangle.push_vertex(*second_point)
 
-    def push_vertex(self, x: int, y: int) -> None:
+    def push_vertex(self, x: float, y: float) -> None:
         self.rectangle.push_vertex(x, y)
 
 
 @dataclass
 class RectSpace:
     tree: OrderedDict[int, List[RectTreeNode]] = field(init=False)
-    old_x: int = field(init=False, default=0, repr=False)
-    old_y: int = field(init=False, default=0, repr=False)
+    old_x: float = field(init=False, default=0, repr=False)
+    old_y: float = field(init=False, default=0, repr=False)
 
     def __post_init__(self):
         self.tree = od()
         self.tree[1] = [RectTreeNode(),]
 
-    def push_vertex(self, x: int, y: int) -> None:
+    def update(self, *vertexes: Vertex):
+
+        key = 0
+        self.tree[1][key].rectangle = RectCheck()
+        self.tree[1][key].push_vertex(*vertexes[0])
+
+        for vertex in vertexes[1:]:
+            self.tree[1][key].push_vertex(*vertex)
+            key += 1
+            if key == len(vertexes) - 1:
+                break
+            self.tree[1][key].rectangle = RectCheck()
+            self.tree[1][key].push_vertex(*vertex)
+
+        tree_key = 2
+        tree_keys = list(self.tree.keys())
+
+        while tree_key in tree_keys:
+            for rect_tree_node in self.tree[tree_key]:
+                rect_tree_node.update(total=True)
+            tree_key *= 2
+
+    def push_vertex(self, x: float, y: float) -> None:
         if self.tree[1][-1].rectangle.correct:
             self.tree[1].append(RectTreeNode())
             self.tree[1][-1].push_vertex(self.old_x, self.old_y)
@@ -311,7 +339,7 @@ class RectSpace:
             right = self.tree[final_root_key][-1]
             self.tree[last_key*2].append(RectTreeNode(left, right))
 
-    def check_cross(self, x1: int, y1: int, x2: int, y2: int) -> bool:
+    def check_cross(self, x1: float, y1: float, x2: float, y2: float) -> bool:
         nodes: Queue[RectTreeNode] = Queue()
         nodes.put(self.tree[list(self.tree.keys())[-1]][0])
 
@@ -348,18 +376,18 @@ class PolyLine:
         PolyLine.instances.append(self)
 
     @property
-    def middle_point(self) -> Tuple[int, int]:
+    def middle_point(self) -> Vertex:
         middle: int = len(self.vertexes) // 2
         return self.vertexes[middle]
 
     @staticmethod
-    def add_line(*args: Tuple[int, int]) -> None:
+    def add_line(*args: Vertex) -> None:
         line: PolyLine = PolyLine(10)
         for arg in args:
             line.push_vertex(*arg)
         line.finish()
 
-    def push_vertex(self, x: int, y: int) -> None:
+    def push_vertex(self, x: float, y: float) -> None:
         self.rect_space.push_vertex(x, y)
         self.vertexes.append((x, y))
 
@@ -369,8 +397,8 @@ class PolyLine:
     def is_edge_end(self, x, y) -> bool:
         if not self.vertexes:
             return True
-        last_x: int
-        last_y: int
+        last_x: float
+        last_y: float
         last_x, last_y = self.vertexes[-1]
         distance: float = np.sqrt(
             np.power(x - last_x, 2) +
@@ -380,12 +408,17 @@ class PolyLine:
         return distance >= self.split_distance
 
     @staticmethod
+    def total_update():
+        for instance in PolyLine.instances:
+            instance.rect_space.update(*instance.vertexes)
+
+    @staticmethod
     def pop() -> None:
         return PolyLine.instances.pop()
 
-    def cross_detect(self, new_x: int, new_y: int) -> bool:
-        last_x: int
-        last_y: int
+    def cross_detect(self, new_x: float, new_y: float) -> bool:
+        last_x: float
+        last_y: float
         last_x, last_y = self.vertexes[-1]
         for polyline in PolyLine.instances[:-1]:
             if polyline.rect_space.check_cross(last_x, last_y, new_x, new_y):
