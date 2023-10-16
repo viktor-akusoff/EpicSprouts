@@ -3,7 +3,6 @@ import copy
 import itertools
 import numpy as np
 import pygame as pg
-from dataclasses import dataclass, field
 from typing import Tuple, List, OrderedDict
 from collections import OrderedDict as od
 from queue import Queue
@@ -92,12 +91,10 @@ def dots_distance(v1: Vector, v2: Vector) -> float:
 class Node:
     instances = []
     id_itter = itertools.count()
-    id: int = field(init=False)
-    vector: Vector
-    degree: int = 0
 
     def __init__(self, x: float, y: float):
         self.vector = Vector(x, y, True)
+        self.degree = 0
         self.id = next(Node.id_itter)
         Node.instances.append(self)
         super().__init__()
@@ -108,8 +105,9 @@ class Node:
         pg.draw.circle(screen, color, self.vector.pair, DOTS_RADIUS)
         screen.blit(text_surface, place)
 
-    @staticmethod
+    @classmethod
     def generate_field(
+        cls,
         screen,
         number_of_dots: int = 10,
         radius: int = 50
@@ -131,46 +129,46 @@ class Node:
                     continue
                 dots.append(Vector(x, y))
                 break
-            Node(x, y)
+            cls(x, y)
 
     def over_node(self, v: Vector) -> bool:
         if dots_distance(self.vector, v) < DOTS_RADIUS:
             return True
         return False
 
-    @staticmethod
-    def rise_degree(id: int, rise: int = 1):
+    @classmethod
+    def rise_degree(cls, id: int, rise: int = 1):
         if id < 0:
             return
-        node: Node = Node.instances[id]
+        node: Node = cls.instances[id]
         if node.degree + rise <= 3:
             node.degree += rise
 
-    @staticmethod
-    def lower_degree(id: int):
+    @classmethod
+    def lower_degree(cls, id: int):
         if id < 0:
             return
-        node: Node = Node.instances[id]
+        node: Node = cls.instances[id]
         if node.degree > 0:
             node.degree -= 1
 
-    @staticmethod
-    def is_free(id: int) -> bool:
+    @classmethod
+    def is_free(cls, id: int) -> bool:
         if id < 0:
             return False
-        node: Node = Node.instances[id]
+        node: Node = cls.instances[id]
         return node.degree < 3
 
-    @staticmethod
-    def over_nodes(x: float, y: float) -> int:
-        for dot in Node.instances:
+    @classmethod
+    def over_nodes(cls, x: float, y: float) -> int:
+        for dot in cls.instances:
             if dot.over_node(Vector(x, y)):
                 return dot.id
         return -1
 
-    @staticmethod
-    def draw_all(screen, over_id: int) -> None:
-        for node in Node.instances:
+    @classmethod
+    def draw_all(cls, screen, over_id: int) -> None:
+        for node in cls.instances:
             node_color: Color = (0, 0, 0)
             if node.degree == 3:
                 node_color = (100, 100, 100)
@@ -179,13 +177,12 @@ class Node:
             node.draw(screen, node_color)
 
 
-@dataclass
 class RectCheck:
 
-    empty: bool = field(init=False, default=True, repr=False)
-
-    v1: Vector = field(init=False)
-    v2: Vector = field(init=False)
+    def __init__(self) -> None:
+        self.empty: bool = True
+        self.v1: Vector = Vector(0, 0)
+        self.v2: Vector = Vector(0, 0)
 
     @property
     def correct(self) -> bool:
@@ -228,14 +225,12 @@ class RectCheck:
         return not final_code
 
 
-@dataclass
 class RectTreeNode:
-    rectangle: RectCheck = field(init=False)
-    left: RectTreeNode | None = field(default=None, repr=False)
-    right: RectTreeNode | None = field(default=None, repr=False)
 
-    def __post_init__(self):
+    def __init__(self, left=None, right=None):
         self.rectangle = RectCheck()
+        self.left: RectTreeNode | None = left
+        self.right: RectTreeNode | None = right
         self.update()
 
     def update(self, total: bool = False):
@@ -390,7 +385,6 @@ class PolyLine:
     vertexes: List[Vector]
     rect_space: RectSpace
     split_distance: float
-    id: int = field(init=False)
 
     def __init__(self, split_distance: int = 5) -> None:
         self.split_distance = split_distance
@@ -405,9 +399,9 @@ class PolyLine:
         middle: int = len(self.vertexes) // 2
         return self.vertexes[middle]
 
-    @staticmethod
-    def add_line(*args: Vector) -> None:
-        line: PolyLine = PolyLine(10)
+    @classmethod
+    def add_line(cls, *args: Vector) -> None:
+        line: cls = cls(10)
         for arg in args:
             line.push_vertex(arg)
         line.finish()
@@ -434,14 +428,14 @@ class PolyLine:
 
         return distance >= self.split_distance
 
-    @staticmethod
-    def total_update():
-        for instance in PolyLine.instances:
+    @classmethod
+    def total_update(cls):
+        for instance in cls.instances:
             instance.rect_space.update(*instance.vertexes)
 
-    @staticmethod
-    def pop() -> PolyLine:
-        return PolyLine.instances.pop()
+    @classmethod
+    def pop(cls) -> PolyLine:
+        return cls.instances.pop()
 
     def cross_detect(self, new_v: Vector) -> bool:
         last_v: Vector
@@ -482,7 +476,7 @@ class PolyLine:
             counter += 1
             previous_vertex = vertex
 
-    @staticmethod
-    def draw_all(screen) -> None:
-        for polyline in PolyLine.instances:
+    @classmethod
+    def draw_all(cls, screen) -> None:
+        for polyline in cls.instances:
             polyline.draw(screen)
