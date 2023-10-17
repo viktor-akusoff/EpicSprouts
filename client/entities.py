@@ -25,7 +25,7 @@ node_font = pg.font.SysFont('arial', 10)
 
 class Vector:
 
-    instances = []
+    instances: List[Vector] = []
     id_itter = itertools.count()
 
     def __init__(self, x: float, y: float, reg: bool = False):
@@ -89,7 +89,7 @@ def dots_distance(v1: Vector, v2: Vector) -> float:
 
 
 class Node:
-    instances = []
+    instances: List[Node] = []
     id_itter = itertools.count()
 
     def __init__(self, x: float, y: float):
