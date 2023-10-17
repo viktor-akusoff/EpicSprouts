@@ -63,29 +63,29 @@ class Vector:
     def pair(self):
         return (self.x, self.y)
 
+    @staticmethod
+    def cohen_sutherland_code(vmin: Vector, vmax: Vector, v: Vector) -> int:
+        result_code: int = CODE_INSIDE
 
-def cohen_sutherland_code(vmin: Vector, vmax: Vector, v: Vector) -> int:
-    result_code: int = CODE_INSIDE
+        if v.x < vmin.x:
+            result_code |= CODE_LEFT
+        elif v.x > vmax.x:
+            result_code |= CODE_RIGHT
 
-    if v.x < vmin.x:
-        result_code |= CODE_LEFT
-    elif v.x > vmax.x:
-        result_code |= CODE_RIGHT
+        if v.y < vmin.y:
+            result_code |= CODE_BOTTOM
+        elif v.y > vmax.y:
+            result_code |= CODE_TOP
 
-    if v.y < vmin.y:
-        result_code |= CODE_BOTTOM
-    elif v.y > vmax.y:
-        result_code |= CODE_TOP
+        return result_code
 
-    return result_code
-
-
-def dots_distance(v1: Vector, v2: Vector) -> float:
-    result: float = np.sqrt(
-        np.power(v2.x - v1.x, 2) +
-        np.power(v2.y - v1.y, 2)
-    )
-    return result
+    @staticmethod
+    def distance(v1: Vector, v2: Vector) -> float:
+        result: float = np.sqrt(
+            np.power(v2.x - v1.x, 2) +
+            np.power(v2.y - v1.y, 2)
+        )
+        return result
 
 
 class Node:
@@ -122,7 +122,7 @@ class Node:
                 x: float = np.random.randint(radius, w - radius)
                 y: float = np.random.randint(radius, h - radius)
                 for dot in dots:
-                    if dots_distance(dot, Vector(x, y)) < radius:
+                    if Vector.distance(dot, Vector(x, y)) < radius:
                         too_close = True
                         break
                 if too_close:
@@ -132,7 +132,7 @@ class Node:
             cls(x, y)
 
     def over_node(self, v: Vector) -> bool:
-        if dots_distance(self.vector, v) < DOTS_RADIUS:
+        if Vector.distance(self.vector, v) < DOTS_RADIUS:
             return True
         return False
 
@@ -216,9 +216,9 @@ class RectCheck:
             self.v2.y = v.y
 
     def check_cross(self, v1: Vector, v2: Vector) -> bool:
-        code_point1: int = cohen_sutherland_code(self.v1, self.v2, v1)
+        code_point1: int = Vector.cohen_sutherland_code(self.v1, self.v2, v1)
 
-        code_point2: int = cohen_sutherland_code(self.v1, self.v2, v2)
+        code_point2: int = Vector.cohen_sutherland_code(self.v1, self.v2, v2)
 
         final_code: int = code_point1 & code_point2
 
