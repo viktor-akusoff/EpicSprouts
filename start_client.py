@@ -1,8 +1,8 @@
 import pygame as pg
-from client.entities import PolyLine, Node
+from client.entities import PolyLine, Node, Vector
 
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
+SCREEN_WIDTH = 1024
+SCREEN_HEIGHT = 768
 
 if __name__ == "__main__":
     pg.init()
@@ -25,7 +25,7 @@ if __name__ == "__main__":
                 Node.is_free(over_node)
             ):
                 line = PolyLine(5)
-                line.push_vertex(*pos)
+                line.push_vertex(Vector(*pos))
                 crossing_dot_a = True
                 out_node = over_node
             elif (event.type == pg.MOUSEBUTTONUP) and line:
@@ -38,10 +38,10 @@ if __name__ == "__main__":
         if line:
             if (over_node > -1) and not crossing_dot_a:
                 if Node.is_free(over_node):
-                    line.push_vertex(*pos)
+                    line.push_vertex(Vector(*pos))
                     Node.rise_degree(over_node)
                     line.finish()
-                    new_node = Node(*line.middle_point)
+                    new_node = Node(*line.middle_point.pair)
                     Node.rise_degree(new_node.id, 2)
                     line = None
                 else:
@@ -55,13 +55,13 @@ if __name__ == "__main__":
                 crossing_dot_a = False
 
         if line and line.is_edge_end(*pos):
-            if (over_node < 0) and line.cross_detect(*pos):
+            if (over_node < 0) and line.cross_detect(Vector(*pos)):
                 line = None
                 if out_node is not None:
                     Node.lower_degree(out_node)
                 PolyLine.pop()
             else:
-                line.push_vertex(*pos)
+                line.push_vertex(Vector(*pos))
 
         screen.fill((255, 255, 255))
 

@@ -1,15 +1,14 @@
 from __future__ import annotations
+import copy
 import itertools
 import numpy as np
 import pygame as pg
-from dataclasses import dataclass, field
 from typing import Tuple, List, OrderedDict
 from collections import OrderedDict as od
 from queue import Queue
 
 Color = Tuple[int, int, int]
 Rect = Tuple[float, float, float, float]
-Vertex = Tuple[float, float]
 
 DOTS_RADIUS = 8
 
@@ -24,52 +23,91 @@ pg.font.init()
 node_font = pg.font.SysFont('arial', 10)
 
 
-def cohen_sutherland_code(
-    xmin: float, ymin: float,
-    xmax: float, ymax: float,
-    x: float, y: float
-) -> int:
-    result_code: int = CODE_INSIDE
+class Vector:
 
-    if x < xmin:
-        result_code |= CODE_LEFT
-    elif x > xmax:
-        result_code |= CODE_RIGHT
-
-    if y < ymin:
-        result_code |= CODE_BOTTOM
-    elif y > ymax:
-        result_code |= CODE_TOP
-
-    return result_code
-
-
-def dots_distance(x1: float, y1: float, x2: float, y2: float) -> float:
-    result: int = np.sqrt(np.power(x2 - x1, 2) + np.power(y2 - y1, 2))
-    return result
-
-
-@dataclass
-class Node:
-    instances = []
+    instances: List[Vector] = []
     id_itter = itertools.count()
-    id: int = field(init=False)
-    x: float = field(default=0)
-    y: float = field(default=0)
-    degree: int = field(init=False, default=0)
 
-    def __post_init__(self):
+    def __init__(self, x: float, y: float, reg: bool = False):
+        self.x: float = x
+        self.y: float = y
+
+        if not reg:
+            return
+
+        self.id = next(Vector.id_itter)
+        Vector.instances.append(self)
+
+    def __eq__(self, __value: Vector) -> bool:
+        return (self.x == __value.x) and (self.y == __value.y)
+
+    def __ne__(self, __value: Vector) -> bool:
+        return (self.x != __value.x) or (self.y != __value.y)
+
+    def __add__(self, __value: Vector) -> Vector:
+        return Vector(self.x + __value.x, self.y + __value.y)
+
+    def __sub__(self, __value: Vector) -> Vector:
+        return Vector(self.x - __value.x, self.y + __value.y)
+
+    def __iadd__(self, __value: Vector) -> Vector:
+        return self.__add__(__value)
+
+    def __isub__(self, __value: Vector) -> Vector:
+        return self.__sub__(__value)
+
+    def __repr__(self) -> str:
+        return f"({self.x}, {self.y})"
+
+    @property
+    def pair(self):
+        return (self.x, self.y)
+
+    @staticmethod
+    def cohen_sutherland_code(vmin: Vector, vmax: Vector, v: Vector) -> int:
+        result_code: int = CODE_INSIDE
+
+        if v.x < vmin.x:
+            result_code |= CODE_LEFT
+        elif v.x > vmax.x:
+            result_code |= CODE_RIGHT
+
+        if v.y < vmin.y:
+            result_code |= CODE_BOTTOM
+        elif v.y > vmax.y:
+            result_code |= CODE_TOP
+
+        return result_code
+
+    @staticmethod
+    def distance(v1: Vector, v2: Vector) -> float:
+        result: float = np.sqrt(
+            np.power(v2.x - v1.x, 2) +
+            np.power(v2.y - v1.y, 2)
+        )
+        return result
+
+
+class Node:
+    instances: List[Node] = []
+    id_itter = itertools.count()
+
+    def __init__(self, x: float, y: float):
+        self.vector = Vector(x, y, True)
+        self.degree = 0
         self.id = next(Node.id_itter)
         Node.instances.append(self)
+        super().__init__()
 
     def draw(self, screen, color: Color = (0, 0, 0)) -> None:
         text_surface = node_font.render(str(self.id), False, (255, 255, 255))
-        place = text_surface.get_rect(center=(self.x, self.y))
-        pg.draw.circle(screen, color, (self.x, self.y), DOTS_RADIUS)
+        place = text_surface.get_rect(center=self.vector.pair)
+        pg.draw.circle(screen, color, self.vector.pair, DOTS_RADIUS)
         screen.blit(text_surface, place)
 
-    @staticmethod
+    @classmethod
     def generate_field(
+        cls,
         screen,
         number_of_dots: int = 10,
         radius: int = 50
@@ -77,60 +115,60 @@ class Node:
         w: int
         h: int
         w, h = screen.get_size()
-        dots: List[Vertex] = []
+        dots: List[Vector] = []
         for _ in range(number_of_dots):
             while True:
                 too_close: bool = False
                 x: float = np.random.randint(radius, w - radius)
                 y: float = np.random.randint(radius, h - radius)
                 for dot in dots:
-                    if dots_distance(*dot, x, y) < radius:
+                    if Vector.distance(dot, Vector(x, y)) < radius:
                         too_close = True
                         break
                 if too_close:
                     continue
-                dots.append((x, y))
+                dots.append(Vector(x, y))
                 break
-            Node(x, y)
+            cls(x, y)
 
-    def over_node(self, x: float, y: float) -> bool:
-        if dots_distance(self.x, self.y, x, y) < DOTS_RADIUS:
+    def over_node(self, v: Vector) -> bool:
+        if Vector.distance(self.vector, v) < DOTS_RADIUS:
             return True
         return False
 
-    @staticmethod
-    def rise_degree(id: int, rise: int = 1):
+    @classmethod
+    def rise_degree(cls, id: int, rise: int = 1):
         if id < 0:
             return
-        node: Node = Node.instances[id]
+        node: Node = cls.instances[id]
         if node.degree + rise <= 3:
             node.degree += rise
 
-    @staticmethod
-    def lower_degree(id: int):
+    @classmethod
+    def lower_degree(cls, id: int):
         if id < 0:
             return
-        node: Node = Node.instances[id]
+        node: Node = cls.instances[id]
         if node.degree > 0:
             node.degree -= 1
 
-    @staticmethod
-    def is_free(id: int) -> bool:
+    @classmethod
+    def is_free(cls, id: int) -> bool:
         if id < 0:
             return False
-        node: Node = Node.instances[id]
+        node: Node = cls.instances[id]
         return node.degree < 3
 
-    @staticmethod
-    def over_nodes(x: float, y: float) -> int:
-        for dot in Node.instances:
-            if dot.over_node(x, y):
+    @classmethod
+    def over_nodes(cls, x: float, y: float) -> int:
+        for dot in cls.instances:
+            if dot.over_node(Vector(x, y)):
                 return dot.id
         return -1
 
-    @staticmethod
-    def draw_all(screen, over_id: int) -> None:
-        for node in Node.instances:
+    @classmethod
+    def draw_all(cls, screen, over_id: int) -> None:
+        for node in cls.instances:
             node_color: Color = (0, 0, 0)
             if node.degree == 3:
                 node_color = (100, 100, 100)
@@ -139,77 +177,60 @@ class Node:
             node.draw(screen, node_color)
 
 
-@dataclass
 class RectCheck:
 
-    empty: bool = field(init=False, default=True, repr=False)
-
-    x1: float = field(init=False, default=0)
-    y1: float = field(init=False, default=0)
-    x2: float = field(init=False, default=0)
-    y2: float = field(init=False, default=0)
+    def __init__(self) -> None:
+        self.empty: bool = True
+        self.v1: Vector = Vector(0, 0)
+        self.v2: Vector = Vector(0, 0)
 
     @property
     def correct(self) -> bool:
-        return (
-            (not self.empty) and not
-            (
-                (self.x1 == self.x2) and
-                (self.y1 == self.y2)
-            )
-        )
+        return not self.empty and not (self.v1 == self.v2)
 
     def draw(self, screen) -> None:
-        rect: Rect = (self.x1, self.y1, self.x2 - self.x1, self.y2 - self.y1)
+        rect: Rect = (
+            self.v1.x, self.v1.y,
+            self.v2.x - self.v1.x,
+            self.v2.y - self.v2.y
+        )
         pg.draw.rect(screen, (0, 0, 0), rect, 1)
 
-    def push_vertex(self, x: float, y: float) -> None:
+    def push_vertex(self, v: Vector) -> None:
         if self.empty:
             self.empty = False
-            self.x1 = x
-            self.y1 = y
-            self.x2 = x
-            self.y2 = y
+            self.v1 = copy.deepcopy(v)
+            self.v2 = copy.deepcopy(v)
             return
 
-        if self.x1 > x:
-            self.x1 = x
+        if self.v1.x > v.x:
+            self.v1.x = v.x
 
-        if self.y1 > y:
-            self.y1 = y
+        if self.v1.y > v.y:
+            self.v1.y = v.y
 
-        if self.x2 < x:
-            self.x2 = x
+        if self.v2.x < v.x:
+            self.v2.x = v.x
 
-        if self.y2 < y:
-            self.y2 = y
+        if self.v2.y < v.y:
+            self.v2.y = v.y
 
-    def check_cross(self, x1: float, y1: float, x2: float, y2: float) -> bool:
-        code_point1: int = cohen_sutherland_code(
-            self.x1, self.y1,
-            self.x2, self.y2,
-            x1, y1
-        )
+    def check_cross(self, v1: Vector, v2: Vector) -> bool:
+        code_point1: int = Vector.cohen_sutherland_code(self.v1, self.v2, v1)
 
-        code_point2: int = cohen_sutherland_code(
-            self.x1, self.y1,
-            self.x2, self.y2,
-            x2, y2
-        )
+        code_point2: int = Vector.cohen_sutherland_code(self.v1, self.v2, v2)
 
         final_code: int = code_point1 & code_point2
 
         return not final_code
 
 
-@dataclass
 class RectTreeNode:
-    rectangle: RectCheck = field(init=False)
-    left: RectTreeNode | None = field(default=None, repr=False)
-    right: RectTreeNode | None = field(default=None, repr=False)
 
-    def __post_init__(self):
+    def __init__(self, left=None, right=None):
         self.rectangle = RectCheck()
+        self.left: RectTreeNode | None = left
+        self.right: RectTreeNode | None = right
         self.update()
 
     def update(self, total: bool = False):
@@ -220,58 +241,57 @@ class RectTreeNode:
         if not self.left or not self.right:
             return
 
-        first_point = [
+        first_point = Vector(
             min(
-                self.left.rectangle.x1,
-                self.right.rectangle.x1
+                self.left.rectangle.v1.x,
+                self.right.rectangle.v1.x
             ),
             min(
-                self.left.rectangle.y1,
-                self.right.rectangle.y1
-            ),
-        ]
+                self.left.rectangle.v1.y,
+                self.right.rectangle.v1.y
+            )
+        )
 
-        second_point = [
+        second_point = Vector(
             max(
-                self.left.rectangle.x2,
-                self.right.rectangle.x2
+                self.left.rectangle.v2.x,
+                self.right.rectangle.v2.x
             ),
             max(
-                self.left.rectangle.y2,
-                self.right.rectangle.y2
+                self.left.rectangle.v2.y,
+                self.right.rectangle.v2.y
             ),
-        ]
+        )
 
-        self.rectangle.push_vertex(*first_point)
-        self.rectangle.push_vertex(*second_point)
+        self.rectangle.push_vertex(first_point)
+        self.rectangle.push_vertex(second_point)
 
-    def push_vertex(self, x: float, y: float) -> None:
-        self.rectangle.push_vertex(x, y)
+    def push_vertex(self, v: Vector) -> None:
+        self.rectangle.push_vertex(v)
 
 
-@dataclass
 class RectSpace:
-    tree: OrderedDict[int, List[RectTreeNode]] = field(init=False)
-    old_x: float = field(init=False, default=0, repr=False)
-    old_y: float = field(init=False, default=0, repr=False)
+    tree: OrderedDict[int, List[RectTreeNode]]
+    old_vector: Vector
 
-    def __post_init__(self):
+    def __init__(self):
         self.tree = od()
         self.tree[1] = [RectTreeNode(),]
+        super().__init__()
 
-    def update(self, *vertexes: Vertex):
+    def update(self, *vertexes: Vector):
 
         key = 0
         self.tree[1][key].rectangle = RectCheck()
-        self.tree[1][key].push_vertex(*vertexes[0])
+        self.tree[1][key].push_vertex(vertexes[0])
 
         for vertex in vertexes[1:]:
-            self.tree[1][key].push_vertex(*vertex)
+            self.tree[1][key].push_vertex(vertex)
             key += 1
             if key == len(vertexes) - 1:
                 break
             self.tree[1][key].rectangle = RectCheck()
-            self.tree[1][key].push_vertex(*vertex)
+            self.tree[1][key].push_vertex(vertex)
 
         tree_key = 2
         tree_keys = list(self.tree.keys())
@@ -281,13 +301,12 @@ class RectSpace:
                 rect_tree_node.update(total=True)
             tree_key *= 2
 
-    def push_vertex(self, x: float, y: float) -> None:
+    def push_vertex(self, v: Vector) -> None:
         if self.tree[1][-1].rectangle.correct:
             self.tree[1].append(RectTreeNode())
-            self.tree[1][-1].push_vertex(self.old_x, self.old_y)
-        self.tree[1][-1].push_vertex(x, y)
-        self.old_x = x
-        self.old_y = y
+            self.tree[1][-1].push_vertex(self.old_vector)
+        self.tree[1][-1].push_vertex(v)
+        self.old_vector = copy.deepcopy(v)
 
         key: int = 1
 
@@ -339,13 +358,13 @@ class RectSpace:
             right = self.tree[final_root_key][-1]
             self.tree[last_key*2].append(RectTreeNode(left, right))
 
-    def check_cross(self, x1: float, y1: float, x2: float, y2: float) -> bool:
+    def check_cross(self, v1: Vector, v2: Vector) -> bool:
         nodes: Queue[RectTreeNode] = Queue()
         nodes.put(self.tree[list(self.tree.keys())[-1]][0])
 
         while nodes.qsize() != 0:
             node: RectTreeNode = nodes.get()
-            if node.rectangle.check_cross(x1, y1, x2, y2):
+            if node.rectangle.check_cross(v1, v2):
                 if (node.left is None) and (node.right is None):
                     return True
                 if node.left:
@@ -360,73 +379,74 @@ class RectSpace:
                 node.rectangle.draw(screen)
 
 
-@dataclass
 class PolyLine:
-    instances = []
+    instances: List[PolyLine] = []
     id_itter = itertools.count()
-    vertexes: List[Vertex] = field(init=False)
-    rect_space: RectSpace = field(init=False)
-    split_distance: float = field(default=5)
-    id: int = field(init=False)
+    vertexes: List[Vector]
+    rect_space: RectSpace
+    split_distance: float
 
-    def __post_init__(self):
+    def __init__(self, split_distance: int = 5) -> None:
+        self.split_distance = split_distance
         self.vertexes = []
         self.rect_space = RectSpace()
         self.id = next(PolyLine.id_itter)
         PolyLine.instances.append(self)
+        super().__init__()
 
     @property
-    def middle_point(self) -> Vertex:
+    def middle_point(self) -> Vector:
         middle: int = len(self.vertexes) // 2
         return self.vertexes[middle]
 
-    @staticmethod
-    def add_line(*args: Vertex) -> None:
-        line: PolyLine = PolyLine(10)
+    @classmethod
+    def add_line(cls, *args: Vector) -> None:
+        line: cls = cls(10)
         for arg in args:
-            line.push_vertex(*arg)
+            line.push_vertex(arg)
         line.finish()
 
-    def push_vertex(self, x: float, y: float) -> None:
-        self.rect_space.push_vertex(x, y)
-        self.vertexes.append((x, y))
+    def push_vertex(self, v: Vector) -> None:
+        self.rect_space.push_vertex(v)
+        self.vertexes.append(Vector(v.x, v.y))
 
     def finish(self) -> None:
+        for vertex in self.vertexes:
+            vertex.id = next(Vector.id_itter)
+            Vector.instances.append(vertex)
         self.rect_space.finish()
 
     def is_edge_end(self, x, y) -> bool:
         if not self.vertexes:
             return True
-        last_x: float
-        last_y: float
-        last_x, last_y = self.vertexes[-1]
+        last_v: Vector
+        last_v = self.vertexes[-1]
         distance: float = np.sqrt(
-            np.power(x - last_x, 2) +
-            np.power(y - last_y, 2)
+            np.power(x - last_v.x, 2) +
+            np.power(y - last_v.y, 2)
         )
 
         return distance >= self.split_distance
 
-    @staticmethod
-    def total_update():
-        for instance in PolyLine.instances:
+    @classmethod
+    def total_update(cls):
+        for instance in cls.instances:
             instance.rect_space.update(*instance.vertexes)
 
-    @staticmethod
-    def pop() -> None:
-        return PolyLine.instances.pop()
+    @classmethod
+    def pop(cls) -> PolyLine:
+        return cls.instances.pop()
 
-    def cross_detect(self, new_x: float, new_y: float) -> bool:
-        last_x: float
-        last_y: float
-        last_x, last_y = self.vertexes[-1]
+    def cross_detect(self, new_v: Vector) -> bool:
+        last_v: Vector
+        last_v = self.vertexes[-1]
         for polyline in PolyLine.instances[:-1]:
-            if polyline.rect_space.check_cross(last_x, last_y, new_x, new_y):
+            if polyline.rect_space.check_cross(last_v, new_v):
                 return True
         rect_tree_nodes: List[RectTreeNode] = self.rect_space.tree[1][:-1]
         for rect_tree_node in rect_tree_nodes:
             rect: RectCheck = rect_tree_node.rectangle
-            if rect.check_cross(last_x, last_y, new_x, new_y):
+            if rect.check_cross(last_v, new_v):
                 return True
         return False
 
@@ -434,7 +454,7 @@ class PolyLine:
         if len(self.vertexes) < 2:
             return
 
-        previous_vertex: Vertex = self.vertexes[0]
+        previous_vertex: Vector = self.vertexes[0]
 
         colors: List[Color] = [
             (70, 200, 70),
@@ -447,8 +467,8 @@ class PolyLine:
             pg.draw.line(
                 screen,
                 colors[counter % 2],
-                previous_vertex,
-                vertex,
+                previous_vertex.pair,
+                vertex.pair,
                 3
             )
             if debug:
@@ -456,7 +476,7 @@ class PolyLine:
             counter += 1
             previous_vertex = vertex
 
-    @staticmethod
-    def draw_all(screen) -> None:
-        for polyline in PolyLine.instances:
+    @classmethod
+    def draw_all(cls, screen) -> None:
+        for polyline in cls.instances:
             polyline.draw(screen)
