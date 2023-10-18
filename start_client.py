@@ -25,7 +25,8 @@ if __name__ == "__main__":
                 Node.is_free(over_node)
             ):
                 line = PolyLine(5)
-                line.push_vertex(Vector(*pos))
+                node_vector = Node.get_by_id(over_node).vector
+                line.push_vertex(node_vector)
                 crossing_dot_a = True
                 out_node = over_node
             elif (event.type == pg.MOUSEBUTTONUP) and line:
@@ -38,7 +39,8 @@ if __name__ == "__main__":
         if line:
             if (over_node > -1) and not crossing_dot_a:
                 if Node.is_free(over_node):
-                    line.push_vertex(Vector(*pos))
+                    node_vector = Node.get_by_id(over_node).vector
+                    line.push_vertex(node_vector)
                     Node.rise_degree(over_node)
                     line.finish()
                     new_node = Node(*line.middle_point.pair)

@@ -4,6 +4,7 @@ import itertools
 import numpy as np
 import pygame as pg
 from typing import Tuple, List, OrderedDict
+from typing_extensions import Self
 from collections import OrderedDict as od
 from queue import Queue
 
@@ -23,9 +24,18 @@ pg.font.init()
 node_font = pg.font.SysFont('arial', 10)
 
 
-class Vector:
+class Entity:
+    instances: List[Self] = []
+    id_itter = itertools.count()
 
-    instances: List[Vector] = []
+    @classmethod
+    def get_by_id(cls, id: int):
+        return cls.instances[id]
+
+
+class Vector(Entity):
+
+    instances: List[Self] = []
     id_itter = itertools.count()
 
     def __init__(self, x: float, y: float, reg: bool = False):
@@ -36,7 +46,7 @@ class Vector:
             return
 
         self.id = next(Vector.id_itter)
-        Vector.instances.append(self)
+        self.instances.append(self)
 
     def __eq__(self, __value: Vector) -> bool:
         return (self.x == __value.x) and (self.y == __value.y)
@@ -88,7 +98,8 @@ class Vector:
         return result
 
 
-class Node:
+class Node(Entity):
+
     instances: List[Node] = []
     id_itter = itertools.count()
 
@@ -96,7 +107,7 @@ class Node:
         self.vector = Vector(x, y, True)
         self.degree = 0
         self.id = next(Node.id_itter)
-        Node.instances.append(self)
+        self.instances.append(self)
         super().__init__()
 
     def draw(self, screen, color: Color = (0, 0, 0)) -> None:
@@ -129,7 +140,7 @@ class Node:
                     continue
                 dots.append(Vector(x, y))
                 break
-            cls(x, y)
+            Node(x, y)
 
     def over_node(self, v: Vector) -> bool:
         if Vector.distance(self.vector, v) < DOTS_RADIUS:
@@ -379,9 +390,11 @@ class RectSpace:
                 node.rectangle.draw(screen)
 
 
-class PolyLine:
+class PolyLine(Entity):
+
     instances: List[PolyLine] = []
     id_itter = itertools.count()
+
     vertexes: List[Vector]
     rect_space: RectSpace
     split_distance: float
@@ -391,7 +404,7 @@ class PolyLine:
         self.vertexes = []
         self.rect_space = RectSpace()
         self.id = next(PolyLine.id_itter)
-        PolyLine.instances.append(self)
+        self.instances.append(self)
         super().__init__()
 
     @property
@@ -411,7 +424,7 @@ class PolyLine:
         self.vertexes.append(Vector(v.x, v.y))
 
     def finish(self) -> None:
-        for vertex in self.vertexes:
+        for vertex in self.vertexes[1:]:
             vertex.id = next(Vector.id_itter)
             Vector.instances.append(vertex)
         self.rect_space.finish()
