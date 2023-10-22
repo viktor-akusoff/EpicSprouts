@@ -1,3 +1,4 @@
+import time
 import pygame as pg
 from client.entities import PolyLine, Node, Vector
 
@@ -13,9 +14,44 @@ if __name__ == "__main__":
     line: PolyLine | None = None
     crossing_dot_a = False
     out_node = None
+    wait_time = None
+    over_node = 0
+    clock = pg.time.Clock()
     while running:
+
+        ms = clock.tick(30)
+
+        screen.fill((255, 255, 255))
+
+        PolyLine.draw_all(screen)
+        Node.draw_all(screen, over_node)
+
+        pg.display.flip()
+
+        if wait_time:
+            for v in Vector.instances:
+                for n in Node.instances:
+                    if (
+                        (n.degree < 2) and
+                        (not n.over_node(v)) and
+                        (v.prev or v.next)
+                    ):
+                        f = n.force_upon(v)
+                        if f.is_zero(0.0001):
+                            sin1 = 0
+                        else:
+                            sin1 = Vector.sin_angle(f, v.diff(n.vector))
+                        v.x += sin1 * ms * f.x
+                        v.y += sin1 * ms * f.y
+            if wait_time < time.time():
+                wait_time = None
+                PolyLine.total_update()
+                pg.mouse.set_visible(True)
+            continue
+
         pos = pg.mouse.get_pos()
         over_node = Node.over_nodes(*pos)
+
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 running = False
@@ -43,9 +79,11 @@ if __name__ == "__main__":
                     line.push_vertex(node_vector)
                     Node.rise_degree(over_node)
                     line.finish()
-                    new_node = Node(*line.middle_point.pair)
+                    new_node = Node(line.middle_point)
                     Node.rise_degree(new_node.id, 2)
                     line = None
+                    wait_time = time.time() + 2
+                    pg.mouse.set_visible(False)
                 else:
                     line = None
                     if out_node is not None:
@@ -64,12 +102,5 @@ if __name__ == "__main__":
                 PolyLine.pop()
             else:
                 line.push_vertex(Vector(*pos))
-
-        screen.fill((255, 255, 255))
-
-        PolyLine.draw_all(screen)
-        Node.draw_all(screen, over_node)
-
-        pg.display.flip()
 
     pg.quit()

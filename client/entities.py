@@ -7,6 +7,8 @@ from typing import Tuple, List, OrderedDict
 from typing_extensions import Self
 from collections import OrderedDict as od
 from queue import Queue
+import warnings
+warnings.filterwarnings("error")
 
 Color = Tuple[int, int, int]
 Rect = Tuple[float, float, float, float]
@@ -41,12 +43,37 @@ class Vector(Entity):
     def __init__(self, x: float, y: float, reg: bool = False):
         self.x: float = x
         self.y: float = y
+        self.next: Vector | None = None
+        self.prev: Vector | None = None
 
         if not reg:
             return
 
+        self.reg()
+
+    def diff(self, v: Vector):
+        a = Vector(self.x, self.y)
+        b = Vector(0, 0)
+        if (self.next is not None) and (self.prev is not None):
+            next_distance = Vector.distance(v, self.next)
+            prev_distance = Vector.distance(v, self.prev)
+            if next_distance > prev_distance:
+                b = self.prev
+            else:
+                b = self.next
+        elif self.next is not None:
+            b = self.next
+        elif self.prev is not None:
+            b = self.prev
+        return a - b
+
+    def is_zero(self, prec) -> bool:
+        dist = np.linalg.norm(self.pair)
+        return dist < prec
+
+    def reg(self):
         self.id = next(Vector.id_itter)
-        self.instances.append(self)
+        Vector.instances.append(self)
 
     def __eq__(self, __value: Vector) -> bool:
         return (self.x == __value.x) and (self.y == __value.y)
@@ -58,16 +85,23 @@ class Vector(Entity):
         return Vector(self.x + __value.x, self.y + __value.y)
 
     def __sub__(self, __value: Vector) -> Vector:
-        return Vector(self.x - __value.x, self.y + __value.y)
+        return Vector(self.x - __value.x, self.y - __value.y)
+
+    def __mul__(self, __value) -> Vector:
+        return Vector(self.x * __value, self.y * __value)
 
     def __iadd__(self, __value: Vector) -> Vector:
+        self.x += __value.x
+        self.y += __value.y
         return self.__add__(__value)
 
     def __isub__(self, __value: Vector) -> Vector:
+        self.x -= __value.x
+        self.y -= __value.y
         return self.__sub__(__value)
 
     def __repr__(self) -> str:
-        return f"({self.x}, {self.y})"
+        return f"({np.round(self.x, 3)}, {np.round(self.y, 3)})"
 
     @property
     def pair(self):
@@ -97,14 +131,21 @@ class Vector(Entity):
         )
         return result
 
+    @staticmethod
+    def sin_angle(v1: Vector, v2: Vector) -> float:
+        v1_u = np.array(v1.pair) / np.linalg.norm(v1.pair)
+        v2_u = np.array(v2.pair) / np.linalg.norm(v2.pair)
+
+        return np.sin(np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0)))
+
 
 class Node(Entity):
 
     instances: List[Node] = []
     id_itter = itertools.count()
 
-    def __init__(self, x: float, y: float):
-        self.vector = Vector(x, y, True)
+    def __init__(self, v: Vector):
+        self.vector = v
         self.degree = 0
         self.id = next(Node.id_itter)
         self.instances.append(self)
@@ -115,6 +156,19 @@ class Node(Entity):
         place = text_surface.get_rect(center=self.vector.pair)
         pg.draw.circle(screen, color, self.vector.pair, DOTS_RADIUS)
         screen.blit(text_surface, place)
+
+    def force_upon(self, v: Vector) -> Vector:
+        dx = v.x - self.vector.x
+        dy = v.y - self.vector.y
+
+        Kn = 600
+
+        result: Vector = Vector(
+            Kn * dx / (dx ** 2 + dy ** 2) ** 2,
+            Kn * dy / (dx ** 2 + dy ** 2) ** 2,
+        )
+
+        return result
 
     @classmethod
     def generate_field(
@@ -140,7 +194,7 @@ class Node(Entity):
                     continue
                 dots.append(Vector(x, y))
                 break
-            Node(x, y)
+            Node(Vector(x, y, True))
 
     def over_node(self, v: Vector) -> bool:
         if Vector.distance(self.vector, v) < DOTS_RADIUS:
@@ -203,7 +257,7 @@ class RectCheck:
         rect: Rect = (
             self.v1.x, self.v1.y,
             self.v2.x - self.v1.x,
-            self.v2.y - self.v2.y
+            self.v2.y - self.v1.y
         )
         pg.draw.rect(screen, (0, 0, 0), rect, 1)
 
@@ -420,13 +474,18 @@ class PolyLine(Entity):
         line.finish()
 
     def push_vertex(self, v: Vector) -> None:
+        last_vertex = None
+        if self.vertexes:
+            last_vertex = self.vertexes[-1]
+            last_vertex.next = v
         self.rect_space.push_vertex(v)
-        self.vertexes.append(Vector(v.x, v.y))
+        self.vertexes.append(v)
+        if last_vertex:
+            self.vertexes[-1].prev = last_vertex
 
     def finish(self) -> None:
-        for vertex in self.vertexes[1:]:
-            vertex.id = next(Vector.id_itter)
-            Vector.instances.append(vertex)
+        for vertex in self.vertexes:
+            vertex.reg()
         self.rect_space.finish()
 
     def is_edge_end(self, x, y) -> bool:
