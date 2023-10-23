@@ -48,6 +48,11 @@ class NodesField:
         if 0 <= index < len(self._nodes) and (self._nodes[index].degree > 0):
             self._nodes[index].degree -= 1
 
+    def get_degree(self, index) -> int:
+        if 0 <= index < len(self._nodes):
+            return self._nodes[index].degree
+        return 0
+
     def generate_field(self, number_of_nodes: int = 10, radius: int = 50):
         w, h = self._screen.get_size()
         dots: List[Tuple[float, float]] = []
