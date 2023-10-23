@@ -46,7 +46,10 @@ class PolylinesField:
         return None
 
     def pop(self):
+        last_polyline = self._polylines[-1]
+        indexes_to_remove = last_polyline.indexes
         self._polylines.pop()
+        self._vertex_field.delete_vertexes(indexes_to_remove)
 
     def draw(self):
 

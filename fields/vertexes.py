@@ -32,3 +32,7 @@ class VertexField:
         if self._vertexes is None:
             return np.array([])
         return self._vertexes[mask]
+
+    def delete_vertexes(self, indexes: List[int]):
+        if self._vertexes is not None:
+            self._vertexes = np.delete(self._vertexes, indexes, axis=0)
