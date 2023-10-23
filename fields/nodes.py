@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import pygame as pg
 import numpy as np
 from typing import Any, Optional, Self, List, Tuple
-from .vertexes import VertexField, VectorAlg
+from .vertexes import VertexField
 
 pg.font.init()
 node_font = pg.font.SysFont('arial', 10)
@@ -55,7 +55,9 @@ class NodesField:
                 x: float = np.random.randint(radius, w - radius)
                 y: float = np.random.randint(radius, h - radius)
                 for dot in dots:
-                    if VectorAlg.distance(dot, (x, y)) < radius:
+                    if np.sqrt(
+                        np.power(dot[0] - x, 2) + np.power(dot[1] - y, 2)
+                    ) < radius:
                         too_close = True
                         break
                 if too_close:

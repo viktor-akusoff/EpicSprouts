@@ -1,18 +1,6 @@
 import numpy as np
 import numpy.typing as npt
-from typing import Optional, Self, List, Tuple
-
-
-class VectorAlg:
-
-    @staticmethod
-    def distance(v1: Tuple[float, float], v2: Tuple[float, float]) -> float:
-        result: float = np.sqrt(
-            np.power(v2[0] - v1[0], 2) +
-            np.power(v2[1] - v1[1], 2)
-        )
-
-        return result
+from typing import Optional, Self, List
 
 
 class VertexField:
