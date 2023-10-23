@@ -4,6 +4,8 @@ import numpy as np
 from typing import Any, Optional, Self, List, Tuple
 from .vertexes import VertexField
 
+DOTS_RADIUS = 8
+
 pg.font.init()
 node_font = pg.font.SysFont('arial', 10)
 
@@ -81,7 +83,9 @@ class NodesField:
             np.power(vys - pos[1], 2)
         )
         distances_and_indexes = np.concatenate((distances, nd_indexes), axis=1)
-        result = distances_and_indexes[distances_and_indexes[:, 0] < 10]
+        result = distances_and_indexes[
+            distances_and_indexes[:, 0] < DOTS_RADIUS
+        ]
         if not result.size:
             return -1
         return int(result[0][1])
@@ -98,5 +102,5 @@ class NodesField:
                 node_color = (100, 100, 100)
             elif node.index == select:
                 node_color = (255, 0, 0)
-            pg.draw.circle(self._screen, node_color, coordinates, 10)
+            pg.draw.circle(self._screen, node_color, coordinates, DOTS_RADIUS)
             self._screen.blit(text_surface, place)
