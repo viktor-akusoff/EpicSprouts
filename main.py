@@ -17,7 +17,7 @@ if __name__ == "__main__":
     nodes_field = NodesField(vertex_field, screen)
     polyline_field = PolylinesField(vertex_field, screen)
 
-    nodes_field.generate_field(15, 100)
+    nodes_field.generate_field(16, 100)
 
     running = True
     drawing = False
@@ -63,6 +63,7 @@ if __name__ == "__main__":
                     nodes_field.lower_degree(start_node)
                 else:
                     polyline_field.push_vertex(pos, 0)
+                    polyline_field.build_tree(-1)
                     nodes_field.rise_degree(over_node)
                 drawing = False
 
