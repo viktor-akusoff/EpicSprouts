@@ -327,6 +327,10 @@ class PolylinesField:
 
         polyline.tree = job_a.pop()
 
+    def rebuild_trees(self):
+        for index in range(len(self._polylines)):
+            self.build_tree(index)
+
     def draw(self, debug: bool = False):
 
         colors: List[Tuple[int, int, int]] = [

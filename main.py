@@ -23,6 +23,7 @@ if __name__ == "__main__":
     drawing = False
     left_starting_node = False
     intersection = False
+    force_move = False
 
     start_node = 0
 
@@ -35,6 +36,15 @@ if __name__ == "__main__":
         nodes_field.draw(over_node)
 
         pg.display.flip()
+
+        key = pg.key.get_pressed()
+
+        if key[pg.K_SPACE] and vertex_field._vertexes is not None:
+            vertex_field._vertexes += 0.1
+            force_move = True
+        elif force_move:
+            force_move = False
+            polyline_field.rebuild_trees()
 
         for event in pg.event.get():
             if event.type == pg.QUIT:
