@@ -22,6 +22,7 @@ if __name__ == "__main__":
     running = True
     drawing = False
     left_starting_node = False
+    intersection = False
 
     start_node = 0
 
@@ -49,12 +50,15 @@ if __name__ == "__main__":
                 start_node = over_node
                 nodes_field.rise_degree(start_node)
                 drawing = True
+                intersection = False
                 left_starting_node = False
             elif (
+                intersection or
                 (left_starting_node and over_node > -1) or
                 (event.type == pg.MOUSEBUTTONUP)
             ) and drawing:
                 if (
+                    intersection or
                     not left_starting_node or
                     (over_node < 0) or
                     (nodes_field.get_degree(over_node) > 2)
@@ -66,11 +70,13 @@ if __name__ == "__main__":
                     polyline_field.build_tree(-1)
                     nodes_field.rise_degree(over_node)
                 drawing = False
+                intersection = False
 
         if not left_starting_node and (over_node < 0):
             left_starting_node = True
 
         if drawing:
+            intersection = polyline_field.check_intersection(pos)
             polyline_field.push_vertex(pos, SEGMENT_STEP)
 
     pg.quit()

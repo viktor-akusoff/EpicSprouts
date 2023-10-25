@@ -1,6 +1,6 @@
 import numpy as np
 import numpy.typing as npt
-from typing import Optional, Self, List
+from typing import Optional, Self, List, Tuple
 
 
 class VertexField:
@@ -23,10 +23,12 @@ class VertexField:
             self._vertexes = np.append(self._vertexes, [[x, y]], axis=0)
         return self._vertexes.shape[0] - 1
 
-    def get_vertex(self, index) -> Optional[List[int]]:
+    def get_vertex(self, index) -> Optional[Tuple[float, float]]:
         if self._vertexes is None:
             return None
-        return list(self._vertexes[index])
+        x = self._vertexes[index][0]
+        y = self._vertexes[index][1]
+        return (x, y)
 
     def get_vertexes_by_mask(self, mask: List[int]) -> npt.NDArray:
         if self._vertexes is None:
