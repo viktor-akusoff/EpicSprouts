@@ -15,6 +15,32 @@ CODE_BOTTOM = 4
 CODE_TOP = 8
 
 
+def projections_intersects(a: float, b: float, c: float, d: float):
+    if (a > b):
+        b, a = a, b
+
+    if (c > d):
+        d, c = c, d
+
+    return np.max([a, c]) <= np.min([b, d])
+
+
+def orientated_area(a: Tuple[float, float],
+                    b: Tuple[float, float],
+                    c: Tuple[float, float]):
+    return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
+
+
+def intersection(a: Tuple[float, float], b: Tuple[float, float],
+                 c: Tuple[float, float], d: Tuple[float, float]):
+    return (
+        projections_intersects(a[0], b[0], c[0], d[0]) and
+        projections_intersects(a[1], b[1], c[1], d[1]) and
+        (orientated_area(a, b, c) * orientated_area(a, b, d) <= 0) and
+        (orientated_area(c, d, a) * orientated_area(c, d, b) <= 0)
+    )
+
+
 def cohen_sutherland_code(
     vmin: Tuple[float, float],
     vmax: Tuple[float, float],
@@ -126,7 +152,7 @@ class PolylinesField:
         pos: Tuple[float, float],
         debug: bool = False
     ):
-        if len(self._polylines) < 2:
+        if not len(self._polylines):
             return False
 
         last_polyline = self._polylines[-1]
@@ -134,14 +160,54 @@ class PolylinesField:
         if (len(last_polyline.indexes) < 2):
             return False
 
-        list_vertex = self._vertex_field.get_vertex(-1)
+        vertexes = self._vertex_field.get_vertexes_by_mask(
+            last_polyline.indexes
+        )
 
-        v1 = list_vertex if list_vertex else pos
+        vertex_pairs = np.squeeze(
+            sliding_window_view(vertexes, window_shape=(2, 2))
+        )
+
+        list_vertex = vertexes[-1]
+
+        v1: Tuple[float, float] = (
+            float(list_vertex[0]),
+            float(list_vertex[1])
+        )
         v2 = pos
+
+        if len(vertex_pairs) > 2:
+            last_two = vertex_pairs[-2: -1]
+            for segment in last_two:
+
+                a: Tuple[float, float] = (
+                    float(segment[0][0]),
+                    float(segment[0][1])
+                )
+
+                b: Tuple[float, float] = (
+                    float(segment[1][0]),
+                    float(segment[1][1])
+                )
+
+                for vertex_pair in vertex_pairs[:-3]:
+
+                    c: Tuple[float, float] = (
+                        float(vertex_pair[0][0]),
+                        float(vertex_pair[0][1])
+                    )
+
+                    d: Tuple[float, float] = (
+                        float(vertex_pair[1][0]),
+                        float(vertex_pair[1][1])
+                    )
+
+                    if intersection(a, b, c, d):
+                        return True
 
         for p in self._polylines:
 
-            if p.tree is None or v1 is None or v2 is None:
+            if p.tree is None:
                 continue
 
             tree = p.tree

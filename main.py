@@ -11,7 +11,7 @@ if __name__ == "__main__":
 
     pg.init()
     pg.display.set_caption('Epic Sprouts')
-    screen = pg.display.set_mode([SCREEN_WIDTH, SCREEN_HEIGHT])
+    screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
     vertex_field = VertexField()
     nodes_field = NodesField(vertex_field, screen)
@@ -76,7 +76,8 @@ if __name__ == "__main__":
             left_starting_node = True
 
         if drawing:
-            intersection = polyline_field.check_intersection(pos)
+            if left_starting_node:
+                intersection = polyline_field.check_intersection(pos)
             polyline_field.push_vertex(pos, SEGMENT_STEP)
 
     pg.quit()
