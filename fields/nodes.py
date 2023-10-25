@@ -40,6 +40,9 @@ class NodesField:
             degree_to_set = 3
         self._nodes.append(Node(index, degree_to_set))
 
+    def push_node_by_index(self, index: int) -> None:
+        self._nodes.append(Node(index, 2))
+
     def rise_degree(self, index):
         if 0 <= index < len(self._nodes) and (self._nodes[index].degree < 3):
             self._nodes[index].degree += 1
@@ -85,7 +88,8 @@ class NodesField:
     def over_node(self, pos: Tuple[float, float]) -> int:
         indexes = self.vertexes_indexes
         vertexes = self._vertex_field.get_vertexes_by_mask(indexes)
-        nd_indexes = np.reshape(np.array(indexes), (vertexes.shape[0], 1))
+        ord_indexes = np.arange(len(indexes))
+        nd_indexes = np.reshape(np.array(ord_indexes), (vertexes.shape[0], 1))
         vxs = vertexes[:, :1]
         vys = vertexes[:, 1:]
         distances = np.sqrt(
@@ -110,7 +114,7 @@ class NodesField:
             node_color = (0, 0, 0)
             if node.degree == 3:
                 node_color = (100, 100, 100)
-            elif node.index == select:
+            elif index == select:
                 node_color = (255, 0, 0)
             pg.draw.circle(self._screen, node_color, coordinates, DOTS_RADIUS)
             self._screen.blit(text_surface, place)

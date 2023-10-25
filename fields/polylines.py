@@ -128,6 +128,10 @@ class PolyLine:
     indexes: List[int] = field(default_factory=lambda: [])
     tree: Optional[TreeNode] = field(default=None)
 
+    @property
+    def middle_point(self):
+        return self.indexes[len(self.indexes)//2]
+
 
 class PolylinesField:
 
@@ -262,6 +266,9 @@ class PolylinesField:
         indexes_to_remove: List[int] = last_polyline.indexes
         self._polylines.pop()
         self._vertex_field.delete_vertexes(indexes_to_remove[1:])
+
+    def get_polyline(self, index):
+        return self._polylines[index]
 
     def build_tree(self, index: int):
         if not self._polylines or not (-1 <= index <= len(self._polylines)):

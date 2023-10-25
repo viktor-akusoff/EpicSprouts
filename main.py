@@ -30,7 +30,6 @@ if __name__ == "__main__":
 
         pos = pg.mouse.get_pos()
         over_node = nodes_field.over_node(pos)
-
         screen.fill((255, 255, 255))
         polyline_field.draw()
         nodes_field.draw(over_node)
@@ -70,6 +69,10 @@ if __name__ == "__main__":
                     polyline_field.end_polyline(index)
                     polyline_field.build_tree(-1)
                     nodes_field.rise_degree(over_node)
+                    last_polyline = polyline_field.get_polyline(-1)
+                    if last_polyline:
+                        index = last_polyline.middle_point
+                        nodes_field.push_node_by_index(index)
                 drawing = False
                 intersection = False
 
