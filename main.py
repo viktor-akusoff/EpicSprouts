@@ -45,8 +45,8 @@ if __name__ == "__main__":
                 (over_node > -1) and
                 (nodes_field.get_degree(over_node) < 3)
             ):
-                polyline_field.start_polyline()
-                polyline_field.push_vertex(pos, SEGMENT_STEP)
+                index = nodes_field.get_index(over_node)
+                polyline_field.start_polyline(index)
                 start_node = over_node
                 nodes_field.rise_degree(start_node)
                 drawing = True
@@ -66,7 +66,8 @@ if __name__ == "__main__":
                     polyline_field.pop()
                     nodes_field.lower_degree(start_node)
                 else:
-                    polyline_field.push_vertex(pos, 0)
+                    index = nodes_field.get_index(over_node)
+                    polyline_field.end_polyline(index)
                     polyline_field.build_tree(-1)
                     nodes_field.rise_degree(over_node)
                 drawing = False

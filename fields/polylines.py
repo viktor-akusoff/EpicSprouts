@@ -134,7 +134,7 @@ class PolylinesField:
     _instance: Optional[Self] = None
 
     @classmethod
-    def __new__(cls, *args, **kwargs) -> Self:
+    def __new__(cls, *args, **kwargs) -> PolylinesField:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
@@ -144,8 +144,14 @@ class PolylinesField:
         self._vertex_field: VertexField = vertex_field
         self._screen = screen
 
-    def start_polyline(self):
-        self._polylines.append(PolyLine())
+    def start_polyline(self, index: int):
+        polyline = PolyLine()
+        polyline.indexes.append(index)
+        self._polylines.append(polyline)
+
+    def end_polyline(self, index: int):
+        polyline = self._polylines[-1]
+        polyline.indexes.append(index)
 
     def check_intersection(
         self,
@@ -234,7 +240,7 @@ class PolylinesField:
 
         return False
 
-    def push_vertex(self, pos: Tuple[int, int], distance: float) -> None:
+    def push_vertex(self, pos: Tuple[float, float], distance: float) -> None:
         last_polyline: PolyLine = self._polylines[-1]
         last_index = last_polyline.indexes[-1] if last_polyline.indexes else -1
         last_vertex = self._vertex_field.get_vertex(last_index)
@@ -255,7 +261,7 @@ class PolylinesField:
         last_polyline: PolyLine = self._polylines[-1]
         indexes_to_remove: List[int] = last_polyline.indexes
         self._polylines.pop()
-        self._vertex_field.delete_vertexes(indexes_to_remove)
+        self._vertex_field.delete_vertexes(indexes_to_remove[1:])
 
     def build_tree(self, index: int):
         if not self._polylines or not (-1 <= index <= len(self._polylines)):
