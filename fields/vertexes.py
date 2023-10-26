@@ -14,10 +14,10 @@ class VertexField:
         return cls._instance
 
     def __init__(self) -> None:
-        self._vertexes: Optional[npt.NDArray] = None
+        self._vertexes: npt.NDArray = np.array([])
 
     def push_vertex(self, x, y) -> int:
-        if self._vertexes is None:
+        if not len(self._vertexes):
             self._vertexes = np.array([[x, y]], dtype=float)
         else:
             self._vertexes = np.append(self._vertexes, [[x, y]], axis=0)
@@ -29,6 +29,10 @@ class VertexField:
         x = self._vertexes[index][0]
         y = self._vertexes[index][1]
         return (x, y)
+
+    @property
+    def indexes(self) -> npt.NDArray:
+        return np.arange(len(self._vertexes))
 
     def get_vertexes_by_mask(self, mask: List[int]) -> npt.NDArray:
         if self._vertexes is None:

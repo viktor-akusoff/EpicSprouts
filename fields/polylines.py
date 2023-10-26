@@ -5,7 +5,7 @@ from numpy.lib.stride_tricks import sliding_window_view
 import numpy.typing as npt
 import pygame as pg
 from dataclasses import dataclass, field
-from typing import List, Optional, Self, Tuple, Deque
+from typing import List, Optional, Self, Tuple, Deque, Set
 from .vertexes import VertexField
 
 CODE_INSIDE = 0
@@ -146,16 +146,19 @@ class PolylinesField:
     def __init__(self, vertex_field: VertexField, screen: pg.Surface) -> None:
         self._polylines: List[PolyLine] = []
         self._vertex_field: VertexField = vertex_field
+        self._indexes: Set[int] = set()
         self._screen = screen
 
     def start_polyline(self, index: int):
         polyline = PolyLine()
         polyline.indexes.append(index)
         self._polylines.append(polyline)
+        self._indexes.add(index)
 
     def end_polyline(self, index: int):
         polyline = self._polylines[-1]
         polyline.indexes.append(index)
+        self._indexes.add(index)
 
     def check_intersection(
         self,
@@ -259,6 +262,7 @@ class PolylinesField:
         ):
             index = self._vertex_field.push_vertex(*pos)
             last_polyline.indexes.append(index)
+            self._indexes.add(index)
         return None
 
     def pop(self):
@@ -377,3 +381,36 @@ class PolylinesField:
 
                 if tree.left:
                     job.appendleft(tree.left)
+
+    def force_update(self, power: float, ms: int):
+        indexes_set = set(self._vertex_field.indexes)
+        already_done_set = set()
+        for p in self._polylines:
+            polyline_indexes_set = set(p.indexes)
+            indexes_set = set(self._vertex_field.indexes)
+            other_indexes = list(indexes_set - polyline_indexes_set)
+
+            v_update = self._vertex_field._vertexes
+            f_vertexes = self._vertex_field.get_vertexes_by_mask(other_indexes)
+
+            for i in p.indexes:
+                if i in already_done_set:
+                    continue
+
+                xs, ys = np.hsplit(f_vertexes, 2)
+
+                dx = -xs + v_update[i][0]
+                dy = -ys + v_update[i][1]
+
+                length_2 = np.power(np.power(dx, 2) + np.power(dy, 2), 2)
+
+                forcex = dx * 600 / length_2
+                forcey = dy * 600 / length_2
+
+                force_vectors = np.concatenate([forcex, forcey], axis=1)
+
+                force_vector = np.sum(force_vectors, axis=0)
+
+                v_update[i] += ms * power * force_vector
+
+                already_done_set.add(i)
