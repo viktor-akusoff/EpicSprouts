@@ -19,6 +19,8 @@ if __name__ == "__main__":
 
     nodes_field.generate_field(16, 100)
 
+    clock = pg.time.Clock()
+
     running = True
     drawing = False
     left_starting_node = False
@@ -28,7 +30,7 @@ if __name__ == "__main__":
     start_node = 0
 
     while running:
-
+        ms = clock.tick()
         pos = pg.mouse.get_pos()
         over_node = nodes_field.over_node(pos)
         screen.fill((255, 255, 255))
@@ -37,11 +39,11 @@ if __name__ == "__main__":
 
         pg.display.flip()
 
-        key = pg.key.get_pressed()
+        mouse = pg.mouse.get_pressed()
 
-        if key[pg.K_SPACE] and vertex_field._vertexes is not None:
-            vertex_field._vertexes += 0.1
+        if mouse[2] and vertex_field._vertexes is not None:
             force_move = True
+            polyline_field.force_update(1, ms)
         elif force_move:
             force_move = False
             polyline_field.rebuild_trees()
