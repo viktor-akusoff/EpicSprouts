@@ -6,6 +6,8 @@ import numpy.typing as npt
 import pygame as pg
 from dataclasses import dataclass, field
 from typing import List, Optional, Self, Tuple, Deque, Set
+
+from .nodes import NodesField
 from .vertexes import VertexField
 
 CODE_INSIDE = 0
@@ -143,9 +145,13 @@ class PolylinesField:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, vertex_field: VertexField, screen: pg.Surface) -> None:
+    def __init__(self,
+                 screen: pg.Surface,
+                 vertex_field: VertexField,
+                 nodes_field: NodesField) -> None:
         self._polylines: List[PolyLine] = []
         self._vertex_field: VertexField = vertex_field
+        self._nodes_field: NodesField = nodes_field
         self._indexes: Set[int] = set()
         self._screen = screen
 
@@ -383,34 +389,78 @@ class PolylinesField:
                     job.appendleft(tree.left)
 
     def force_update(self, power: float, ms: int):
-        indexes_set = set(self._vertex_field.indexes)
-        already_done_set = set()
+        indexes_set: Set[int] = set(self._vertex_field.indexes)
+        already_done_set: Set[int] = set()
         for p in self._polylines:
-            polyline_indexes_set = set(p.indexes)
-            indexes_set = set(self._vertex_field.indexes)
+            polyline_indexes_set: Set[int] = set(p.indexes)
+            indexes_set: Set[int] = set(self._vertex_field.indexes)
+            nodes_indexes = self._nodes_field.get_indexes_by_degree([0, 1])
             other_indexes = list(indexes_set - polyline_indexes_set)
+            nodes_vertexes = self._vertex_field._vertexes[nodes_indexes] * 10
 
             v_update = self._vertex_field._vertexes
             f_vertexes = self._vertex_field.get_vertexes_by_mask(other_indexes)
+            f_vertexes = np.concatenate([f_vertexes, nodes_vertexes], axis=0)
 
-            for i in p.indexes:
-                if i in already_done_set:
+            for i, index in enumerate(p.indexes):
+                if index in already_done_set:
                     continue
 
                 xs, ys = np.hsplit(f_vertexes, 2)
 
-                dx = -xs + v_update[i][0]
-                dy = -ys + v_update[i][1]
+                dx = -xs + v_update[index][0]
+                dy = -ys + v_update[index][1]
 
-                length_2 = np.power(np.power(dx, 2) + np.power(dy, 2), 2)
+                length = np.power(np.power(dx, 2) + np.power(dy, 2), 2)
 
-                forcex = dx * 600 / length_2
-                forcey = dy * 600 / length_2
+                repulsive_forcex = dx * 50 / length
+                repulsive_forcey = dy * 50 / length
 
-                force_vectors = np.concatenate([forcex, forcey], axis=1)
+                repulsive_force_vectors = np.concatenate(
+                    [repulsive_forcex, repulsive_forcey],
+                    axis=1
+                )
 
-                force_vector = np.sum(force_vectors, axis=0)
+                if i - 1 > 0:
+                    prev_index = p.indexes[i - 1]
+                    prev_neighbour = self._vertex_field.get_vertex(prev_index)
+                    if prev_neighbour:
+                        force_v = v_update[index] - prev_neighbour
+                        dx = prev_neighbour[0] - v_update[index][0]
+                        dy = prev_neighbour[1] - v_update[index][1]
+                        length = np.sqrt(np.power(dx, 2) + np.power(dy, 2))
+                        grav_force = -0.001 * force_v * abs(5-length)
+                        repulsive_force_vectors = np.concatenate(
+                            [
+                                repulsive_force_vectors,
+                                [grav_force]
+                            ],
+                            axis=0
+                        )
 
-                v_update[i] += ms * power * force_vector
+                if i + 1 < len(p.indexes):
+                    next_index = p.indexes[i + 1]
+                    next_neighbour = self._vertex_field.get_vertex(next_index)
+                    if next_neighbour:
+                        force_v = v_update[index] - next_neighbour
+                        dx = next_neighbour[0] - v_update[index][0]
+                        dy = next_neighbour[1] - v_update[index][1]
+                        length = np.sqrt(np.power(dx, 2) + np.power(dy, 2))
+                        grav_force = -0.001 * force_v * abs(5-length)
+
+                        repulsive_force_vectors = np.concatenate(
+                            [
+                                repulsive_force_vectors,
+                                [grav_force],
+                            ],
+                            axis=0
+                        )
+
+                repulsive_force_vector = np.sum(
+                    repulsive_force_vectors,
+                    axis=0
+                )
+
+                v_update[index] += ms * power * repulsive_force_vector
 
                 already_done_set.add(i)

@@ -15,7 +15,7 @@ if __name__ == "__main__":
 
     vertex_field = VertexField()
     nodes_field = NodesField(vertex_field, screen)
-    polyline_field = PolylinesField(vertex_field, screen)
+    polyline_field = PolylinesField(screen, vertex_field, nodes_field)
 
     nodes_field.generate_field(16, 100)
 

@@ -1,7 +1,8 @@
+from __future__ import annotations
 from dataclasses import dataclass
 import pygame as pg
 import numpy as np
-from typing import Any, Optional, Self, List, Tuple
+from typing import Any, Optional, List, Tuple
 from .vertexes import VertexField
 
 DOTS_RADIUS = 8
@@ -18,10 +19,10 @@ class Node:
 
 class NodesField:
 
-    _instance: Optional[Self] = None
+    _instance: Optional[NodesField] = None
 
     @classmethod
-    def __new__(cls, *args: Any, **kwargs: Any) -> Self:
+    def __new__(cls, *args: Any, **kwargs: Any):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
@@ -60,6 +61,14 @@ class NodesField:
         if 0 <= index < len(self._nodes):
             return self._nodes[index].index
         return 0
+
+    def get_indexes_by_degree(self, degrees: List[int]) -> List[int]:
+        result: List[int] = []
+
+        for node in self._nodes:
+            if node.degree in degrees:
+                result.append(node.index)
+        return result
 
     def generate_field(self, number_of_nodes: int = 10, radius: int = 50):
         w, h = self._screen.get_size()
