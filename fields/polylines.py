@@ -390,22 +390,23 @@ class PolylinesField:
 
     def force_update(self, power: float, ms: int):
         indexes_set: Set[int] = set(self._vertex_field.indexes)
-        already_done_set: Set[int] = set()
         for p in self._polylines:
             polyline_indexes_set: Set[int] = set(p.indexes)
             indexes_set: Set[int] = set(self._vertex_field.indexes)
-            nodes_indexes = self._nodes_field.get_indexes_by_degree([0, 1])
-            other_indexes = list(indexes_set - polyline_indexes_set)
-            nodes_vertexes = self._vertex_field._vertexes[nodes_indexes] * 10
+            nodes_indexes = self._nodes_field.get_indexes_by_degree([0])
+            nodes_indexes_set = set(nodes_indexes)
+            other_indexes_set = (
+                indexes_set -
+                polyline_indexes_set -
+                nodes_indexes_set
+            )
+            other_indexes = list(other_indexes_set)
+            nodes_vertexes = self._vertex_field._vertexes[nodes_indexes]
 
             v_update = self._vertex_field._vertexes
             f_vertexes = self._vertex_field.get_vertexes_by_mask(other_indexes)
-            f_vertexes = np.concatenate([f_vertexes, nodes_vertexes], axis=0)
 
             for i, index in enumerate(p.indexes):
-                if index in already_done_set:
-                    continue
-
                 xs, ys = np.hsplit(f_vertexes, 2)
 
                 dx = -xs + v_update[index][0]
@@ -421,6 +422,29 @@ class PolylinesField:
                     axis=1
                 )
 
+                xs, ys = np.hsplit(nodes_vertexes, 2)
+
+                dx = -xs + v_update[index][0]
+                dy = -ys + v_update[index][1]
+
+                length = np.power(np.power(dx, 2) + np.power(dy, 2), 2)
+
+                nodes_repulsive_forcex = dx * 2000 / length
+                nodes_repulsive_forcey = dy * 2000 / length
+
+                nodes_repulsive_force_vectors = np.concatenate(
+                    [nodes_repulsive_forcex, nodes_repulsive_forcey],
+                    axis=1
+                )
+
+                repulsive_force_vectors = np.concatenate(
+                    [
+                        repulsive_force_vectors,
+                        nodes_repulsive_force_vectors
+                    ],
+                    axis=0
+                )
+
                 if i - 1 > 0:
                     prev_index = p.indexes[i - 1]
                     prev_neighbour = self._vertex_field.get_vertex(prev_index)
@@ -429,7 +453,7 @@ class PolylinesField:
                         dx = prev_neighbour[0] - v_update[index][0]
                         dy = prev_neighbour[1] - v_update[index][1]
                         length = np.sqrt(np.power(dx, 2) + np.power(dy, 2))
-                        grav_force = -0.001 * force_v * abs(5-length)
+                        grav_force = -0.002 * force_v * abs(5-length)
                         repulsive_force_vectors = np.concatenate(
                             [
                                 repulsive_force_vectors,
@@ -446,7 +470,7 @@ class PolylinesField:
                         dx = next_neighbour[0] - v_update[index][0]
                         dy = next_neighbour[1] - v_update[index][1]
                         length = np.sqrt(np.power(dx, 2) + np.power(dy, 2))
-                        grav_force = -0.001 * force_v * abs(5-length)
+                        grav_force = -0.002 * force_v * abs(5-length)
 
                         repulsive_force_vectors = np.concatenate(
                             [
@@ -462,5 +486,3 @@ class PolylinesField:
                 )
 
                 v_update[index] += ms * power * repulsive_force_vector
-
-                already_done_set.add(i)
